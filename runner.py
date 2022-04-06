@@ -58,9 +58,10 @@ class Runner:
                 plt.xlabel('episode * ' + str(self.args.evaluate_rate / self.episode_limit))
                 plt.ylabel('average returns')
                 plt.savefig(self.save_path + '/plt.png', format='png')
+                np.save(self.save_path + '/returns.pkl', returns)
             self.noise = max(0.05, self.noise - 0.0000005)
             self.epsilon = max(0.05, self.epsilon - 0.0000005)
-            np.save(self.save_path + '/returns.pkl', returns)
+            # np.save(self.save_path + '/returns.pkl', returns)
 
     def evaluate(self):
         returns = []
@@ -69,7 +70,8 @@ class Runner:
             s = self.env.reset()
             rewards = 0
             for time_step in range(self.args.evaluate_episode_len):
-                self.env.render()
+                if self.args.render:
+                    self.env.render()
                 actions = []
                 with torch.no_grad():
                     for agent_id, agent in enumerate(self.agents):
