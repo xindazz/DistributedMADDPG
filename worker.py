@@ -15,9 +15,12 @@ app = celery.Celery('kmeans_workers',
 #                        broker='amqp://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com',
 #                        backend='rpc://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com')
 
+params_loaded = []
 
 @app.task
 def upload_params(**kwargs):
+    global params_loaded
+                    
     json_dump=kwargs['json_dump']
     json_load = json.loads(json_dump)
    
