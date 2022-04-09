@@ -6,9 +6,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import celery
+from kombu import Queue
 from agent import Agent
 from common.replay_buffer import Buffer
-from worker import init_agent, NumpyEncoder
+from worker import app, init_agent, NumpyEncoder
+from celery.result import AsyncResult
 
 
 class Runner:
@@ -28,11 +30,20 @@ class Runner:
     def _init_agents(self):
         # upload params to agents, queue name is "q{agent_id}:
         print("Start init agents")
-        print("Args to send: ", json.dumps({"agent_id": 0, "args": vars(self.args)}, cls=NumpyEncoder))
-        response = celery.group(
-                init_agent.s(json_dump = json.dumps({"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder)) for i in range(2)
-            )()
-        print("Init agent response", response)
+
+        # response = celery.group(
+        #         init_agent.s(json_dump = json.dumps({"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder), queue = Queue('q' + str(i), routing_key='q' + str(i))) for i in range(2)
+        #     )()
+
+        tasks = []
+        for i in range(2):
+            task = app.send_task("worker.init_agent", queue='q' + str(i), kwargs={"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder)
+            tasks.append(task)
+        print(tasks)
+        for task in tasks:
+            print(AsyncResult(task).result)
+
+        print("Init agent response")
 
 
     def run(self):

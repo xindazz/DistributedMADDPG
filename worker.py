@@ -31,8 +31,8 @@ def init_agent(**kwargs):
     global agent
     global env
                     
-    json_dump=kwargs['json_dump']
-    json_load = json.loads(json_dump)
+    # json_dump=kwargs['json_dump']
+    json_load = json.loads(kwargs)
     agent_id = json_load["agent_id"]
     myargs = json_load["args"]
     print("Agent", agent_id, "received args:", myargs)
