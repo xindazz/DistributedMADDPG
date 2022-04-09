@@ -1,45 +1,87 @@
-import celery
+from tqdm import tqdm
+from agent import Agent
+from common.replay_buffer import Buffer
+import torch
+import os
 import numpy as np
-from copy import deepcopy
-import json
-import random
 import matplotlib.pyplot as plt
 
-import os
 
- 
-# Make sure that the 'myguest' user exists with 'myguestpwd' on the RabbitMQ server and your load balancer has been set up correctly.
-# My load balancer address is'RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com'. 
-# Below you will need to change it to your load balancer's address.
+class Runner:
+    def __init__(self, args, env):
+        self.args = args
+        self.noise = args.noise_rate
+        self.epsilon = args.epsilon
+        self.episode_limit = args.max_episode_len
+        self.env = env
+        self.agents = self._init_agents()
+        self.buffer = Buffer(args)
+        self.save_path = self.args.save_dir + '/' + self.args.scenario_name
+        if not os.path.exists(self.save_path):
+            os.makedirs(self.save_path)
 
-app = celery.Celery('kmeans_workers',
-                       broker='amqp://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com',
-                       backend='rpc://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com')
+    def _init_agents(self):
+        agents = []
+        for i in range(self.args.n_agents):
+            agent = Agent(i, self.args)
+            agents.append(agent)
+        return agents
 
+    def run(self):
+        returns = []
+        for time_step in tqdm(range(self.args.time_steps)):
+            # reset the environment
+            if time_step % self.episode_limit == 0:
+                s = self.env.reset()
+            u = []
+            actions = []
+            with torch.no_grad():
+                for agent_id, agent in enumerate(self.agents):
+                    action = agent.select_action(s[agent_id], self.noise, self.epsilon)
+                    u.append(action)
+                    actions.append(action)
+            for i in range(self.args.n_agents, self.args.n_players):
+                actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
+            s_next, r, done, info = self.env.step(actions)
+            self.buffer.store_episode(s[:self.args.n_agents], u, r[:self.args.n_agents], s_next[:self.args.n_agents])
+            s = s_next
+            if self.buffer.current_size >= self.args.batch_size:
+                transitions = self.buffer.sample(self.args.batch_size)
+                for agent in self.agents:
+                    other_agents = self.agents.copy()
+                    other_agents.remove(agent)
+                    agent.learn(transitions, other_agents)
+            if time_step > 0 and time_step % self.args.evaluate_rate == 0:
+                returns.append(self.evaluate())
+                plt.figure()
+                plt.plot(range(len(returns)), returns)
+                plt.xlabel('episode * ' + str(self.args.evaluate_rate / self.episode_limit))
+                plt.ylabel('average returns')
+                plt.savefig(self.save_path + '/plt.png', format='png')
+                np.save(self.save_path + '/returns.pkl', returns)
+            self.noise = max(0.05, self.noise - 0.0000005)
+            self.epsilon = max(0.05, self.epsilon - 0.0000005)
+            # np.save(self.save_path + '/returns.pkl', returns)
 
-@app.task
-def lin_regression_tasks(**kwargs):
-    json_dump=kwargs['json_dump']
-    json_load = json.loads(json_dump)
-    
-    XY = np.asarray(json_load["XY"]) 
-    x = XY[0]
-    y = XY[1]
-    
-    A = calc_A(x)
-    
-    term1 = calc_AT_times_A(A)
-    term2 = calc_AT_times_y(A,y)
-    
-    return json.dumps({'term1':term1, 'term2':term2},cls=NumpyEncoder)
-    
-        
-    
-        
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        elif isinstance(obj, np.int64): 
-            return int(obj)
-        return json.JSONEncoder.default(self, obj)
+    def evaluate(self):
+        returns = []
+        for episode in range(self.args.evaluate_episodes):
+            # reset the environment
+            s = self.env.reset()
+            rewards = 0
+            for time_step in range(self.args.evaluate_episode_len):
+                if self.args.render:
+                    self.env.render()
+                actions = []
+                with torch.no_grad():
+                    for agent_id, agent in enumerate(self.agents):
+                        action = agent.select_action(s[agent_id], 0, 0)
+                        actions.append(action)
+                for i in range(self.args.n_agents, self.args.n_players):
+                    actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
+                s_next, r, done, info = self.env.step(actions)
+                rewards += r[0]
+                s = s_next
+            returns.append(rewards)
+            print('Returns is', rewards)
+        return sum(returns) / self.args.evaluate_episodes
