@@ -105,3 +105,5 @@ def parse_args(myargs):
     args = Arguments(scenario_name, max_episode_len, time_steps, num_adversaries, lr_actor, lr_critic, 
                     epsilon, noise_rate, gamma, tau, buffer_size, batch_size, save_dir, save_rate, model_dir, 
                     evaluate_episodes, evaluate_episodes_len, evaluate, evaluate_rate, render)
+
+    return args
