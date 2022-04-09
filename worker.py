@@ -16,8 +16,8 @@ from common.utils import make_env
 # Below you will need to change it to your load balancer's address.
 
 app = celery.Celery('worker',
-                        broker='amqp://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com',
-                        backend='rpc://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com')
+                        broker='amqp://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com',
+                        backend='rpc://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com')
 
 args = None
 agent = None

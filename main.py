@@ -1,4 +1,5 @@
-from runner import Runner
+# from runner import Runner
+from master import Runner
 from common.arguments import get_args
 from common.utils import make_env
 import numpy as np
@@ -10,7 +11,6 @@ if __name__ == '__main__':
     # get the params
     args = get_args()
     env, args = make_env(args)
-    print(vars(args))
     runner = Runner(args, env)
     if args.evaluate:
         returns = runner.evaluate()
