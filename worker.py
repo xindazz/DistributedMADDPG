@@ -4,7 +4,6 @@ from copy import deepcopy
 import json
 import random
 import matplotlib.pyplot as plt
-
 import os
 
  
@@ -13,28 +12,22 @@ import os
 # Below you will need to change it to your load balancer's address.
 
 app = celery.Celery('kmeans_workers',
-                       broker='amqp://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com',
-                       backend='rpc://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com')
+#                        broker='amqp://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com',
+#                        backend='rpc://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com')
 
+params_loaded = []
 
 @app.task
-def lin_regression_tasks(**kwargs):
+def upload_params(**kwargs):
+    global params_loaded
+                    
     json_dump=kwargs['json_dump']
     json_load = json.loads(json_dump)
+   
+    params_loaded = np.asarray(json_load["myparmas"])
+    print(params_loaded)
     
-    XY = np.asarray(json_load["XY"]) 
-    x = XY[0]
-    y = XY[1]
-    
-    A = calc_A(x)
-    
-    term1 = calc_AT_times_A(A)
-    term2 = calc_AT_times_y(A,y)
-    
-    return json.dumps({'term1':term1, 'term2':term2},cls=NumpyEncoder)
 
-    
-        
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
