@@ -35,7 +35,7 @@ def init_agent(**kwargs):
     json_load = json.loads(json_dump)
     agent_id = json_load["agent_id"]
     myargs = json_load["args"]
-    print("Agent", agent_id, "received args:", args)
+    print("Agent", agent_id, "received args:", myargs)
 
     args = parse_args(myargs)
     env, args = make_env(args)
@@ -57,7 +57,7 @@ class NumpyEncoder(json.JSONEncoder):
 class Arguments:
     def __init__(self, scenario_name, max_episode_len, time_steps, num_adversaries, lr_actor, lr_critic, 
                     epsilon, noise_rate, gamma, tau, buffer_size, batch_size, save_dir, save_rate, model_dir, 
-                    evaluate_episodes, evaluate_episodes_len, evaluate, evaluate_rate, render):
+                    evaluate_episodes, evaluate_episode_len, evaluate, evaluate_rate, render):
         self.scenario_name = scenario_name
         self.max_episode_len = max_episode_len
         self.time_steps = time_steps
@@ -74,7 +74,7 @@ class Arguments:
         self.save_rate = save_rate
         self.model_dir = model_dir
         self.evaluate_episodes = evaluate_episodes
-        self.evaluate_episodes_len = evaluate_episodes_len
+        self.evaluate_episode_len = evaluate_episode_len
         self.evaluate = evaluate
         self.evaluate_rate = evaluate_rate
         self.render = render
@@ -97,7 +97,7 @@ def parse_args(myargs):
     save_rate = myargs["save_rate"]
     model_dir = myargs["model_dir"]
     evaluate_episodes = myargs["evaluate_episodes"]
-    evaluate_episodes_len = myargs["evaluate_episodes_len"]
+    evaluate_episodes_len = myargs["evaluate_episode_len"]
     evaluate = myargs["evaluate"]
     evaluate_rate = myargs["evaluate_rate"]
     render = myargs["render"]
