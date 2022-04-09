@@ -43,6 +43,7 @@ def init_agent(**kwargs):
     agent = Agent(agent_id, args)
     print("Agent", agent_id, "received args:", args)
     
+    return "Init Success"
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
