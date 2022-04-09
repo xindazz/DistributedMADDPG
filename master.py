@@ -1,10 +1,14 @@
 from tqdm import tqdm
-from agent import Agent
-from common.replay_buffer import Buffer
+from copy import deepcopy
+import json
 import torch
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import celery
+from agent import Agent
+from common.replay_buffer import Buffer
+from worker import init_agent, NumpyEncoder
 
 
 class Runner:
@@ -14,18 +18,19 @@ class Runner:
         self.epsilon = args.epsilon
         self.episode_limit = args.max_episode_len
         self.env = env
-        self.agents = self._init_agents()
+        # self.agents = self._init_agents()
+        self._init_agents()
         self.buffer = Buffer(args)
         self.save_path = self.args.save_dir + '/' + self.args.scenario_name
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
 
     def _init_agents(self):
-        agents = []
-        for i in range(self.args.n_agents):
-            agent = Agent(i, self.args)
-            agents.append(agent)
-        return agents
+        # upload params to agents, queue name is "q{agent_id}:
+        celery.group(
+                init_agent.s(json_dump = json.dumps({"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder), queue = "q" + str(i)) for i in range(self.args.n_agents)
+            )()
+
 
     def run(self):
         returns = []
@@ -33,13 +38,25 @@ class Runner:
             # reset the environment
             if time_step % self.episode_limit == 0:
                 s = self.env.reset()
+
+            # u contains the actions of the agents that we are training
             u = []
+            # actions contains actions of all agents in the environment, including those on the opposing team
             actions = []
-            with torch.no_grad():
-                for agent_id, agent in enumerate(self.agents):
-                    action = agent.select_action(s[agent_id], self.noise, self.epsilon)
-                    u.append(action)
-                    actions.append(action)
+
+            # Get action from every agent
+            tasks = []
+            data = {}
+            for agent_id, agent in enumerate(self.agents):
+                tasks.append(get_action.s(json_dump = json.dumps(data, cls=NumpyEncoder)))
+
+            response = group(tasks)()
+            results = response.get()
+            
+            for result in results:
+                u.append(result["action"])
+                actions.append(result["action"])
+
             for i in range(self.args.n_agents, self.args.n_players):
                 actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
             s_next, r, done, info = self.env.step(actions)

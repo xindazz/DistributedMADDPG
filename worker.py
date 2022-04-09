@@ -20,28 +20,25 @@ app = celery.Celery('worker',
                         backend='rpc://myguest:myguestpwd@RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com')
 
 args = None
-agents = []
-env = []
+agent = None
+env = None
 
 @app.task
-def upload_params(**kwargs):
+def init_agent(**kwargs):
     global args
-    global agents
+    global agent
     global env
                     
     json_dump=kwargs['json_dump']
     json_load = json.loads(json_dump)
+    agent_id = json_load["agent_id"]
     myargs = np.asarray(json_load["args"])
 
     args = parse_args(myargs)
-
     env, args = make_env(args)
 
-    # initialize agents
-    agents = []
-    for i in range(args.n_agents):
-        agent = Agent(i, args)
-        agents.append(agent)
+    # initialize agent
+    agent = Agent(agent_id, args)
     
 
 class NumpyEncoder(json.JSONEncoder):
