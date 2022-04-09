@@ -32,9 +32,9 @@ def init_agent(**kwargs):
     global env
                     
     # json_dump=kwargs['json_dump']
-    json_load = json.loads(kwargs)
-    agent_id = json_load["agent_id"]
-    myargs = json_load["args"]
+    # json_load = json.loads(kwargs)
+    agent_id = kwargs["agent_id"]
+    myargs = kwargs["args"]
     print("Agent", agent_id, "received args:", myargs)
 
     args = parse_args(myargs)

@@ -29,21 +29,14 @@ class Runner:
 
     def _init_agents(self):
         # upload params to agents, queue name is "q{agent_id}:
-        print("Start init agents")
+        print("Start init all agents")
 
-        # response = celery.group(
-        #         init_agent.s(json_dump = json.dumps({"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder), queue = Queue('q' + str(i), routing_key='q' + str(i))) for i in range(2)
-        #     )()
-
-        tasks = []
         for i in range(2):
+        # for i in range(self.args.n_agents):
             task = app.send_task("worker.init_agent", queue='q' + str(i), kwargs={"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder)
-            tasks.append(task)
-        print(tasks)
-        for task in tasks:
-            print(AsyncResult(task).result)
+            print(task.get())
 
-        print("Init agent response")
+        print("Init all agents done")
 
 
     def run(self):
