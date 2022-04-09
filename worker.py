@@ -34,9 +34,9 @@ def init_agent(**kwargs):
     json_dump=kwargs['json_dump']
     json_load = json.loads(json_dump)
     agent_id = json_load["agent_id"]
-    myargs = np.asarray(json_load["args"])
+    myargs = json_load["args"]
     print("Agent", agent_id, "received args:", args)
-    
+
     args = parse_args(myargs)
     env, args = make_env(args)
 

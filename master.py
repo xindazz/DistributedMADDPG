@@ -28,6 +28,7 @@ class Runner:
     def _init_agents(self):
         # upload params to agents, queue name is "q{agent_id}:
         print("Start init agents")
+        print("Args to send: ", json.dumps({"agent_id": 0, "args": vars(self.args)}, cls=NumpyEncoder))
         response = celery.group(
                 init_agent.s(json_dump = json.dumps({"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder)) for i in range(2)
             )()
