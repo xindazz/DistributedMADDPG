@@ -10,6 +10,8 @@ from agent import Agent
 from common.utils import make_env
 
 
+#run this code with "celery -A worker worker --loglevel=info --concurrency=1" on the 4 worker machines
+
  
 # Make sure that the 'myguest' user exists with 'myguestpwd' on the RabbitMQ server and your load balancer has been set up correctly.
 # My load balancer address is'RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com'. 
@@ -39,6 +41,7 @@ def init_agent(**kwargs):
 
     # initialize agent
     agent = Agent(agent_id, args)
+    print("Agent", agent_id, "received args:", args)
     
 
 class NumpyEncoder(json.JSONEncoder):
