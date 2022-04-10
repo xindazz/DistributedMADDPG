@@ -32,8 +32,8 @@ class Runner:
         print("Start init all agents")
 
         tasks = []
-        for i in range(2):
-        # for i in range(self.args.n_agents):
+        # for i in range(2):
+        for i in range(self.args.n_agents):
             task = app.send_task("worker.init_agent", queue='q' + str(i), kwargs={"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder)
             tasks.append(task)
 
