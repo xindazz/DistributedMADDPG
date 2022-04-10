@@ -62,7 +62,7 @@ def get_action(**kwargs):
                     
     s = np.asarray(kwargs["s"])
     evaluate = kwargs["evaluate"]
-    print("Agent", agent_id, "received state:", s)
+    print("Agent", agent_id, "received state:")
 
     with torch.no_grad():
         if evaluate:
@@ -78,7 +78,7 @@ def get_target_next_action(**kwargs):
     global agent
                     
     s = np.asarray(kwargs["s"])
-    print("Agent", agent_id, "received next state:", s)
+    print("Agent", agent_id, "received next state:")
 
     with torch.no_grad():
         action = agent.policy.actor_target_network(torch.tensor(s, dtype=torch.float))
