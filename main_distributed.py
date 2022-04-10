@@ -1,4 +1,5 @@
-from runner import Runner
+# from runner import Runner
+from master import Runner
 from common.arguments import get_args
 from common.utils import make_env
 import numpy as np

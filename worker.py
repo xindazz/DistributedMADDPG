@@ -5,8 +5,9 @@ import json
 import random
 import matplotlib.pyplot as plt
 import os
+import torch
 
-from agent import Agent
+from agent_distributed import Agent
 from common.utils import make_env
 
 
@@ -21,15 +22,21 @@ app = celery.Celery('worker',
                         broker='amqp://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com',
                         backend='rpc://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com')
 
+agent_id = None
 args = None
 agent = None
 env = None
+time_step = None
+save_path = None
 
 @app.task
 def init_agent(**kwargs):
+    global agent_id
     global args
     global agent
     global env
+    global time_step
+    global save_path
                     
     # json_dump=kwargs['json_dump']
     # json_load = json.loads(kwargs)
@@ -42,8 +49,58 @@ def init_agent(**kwargs):
 
     # initialize agent
     agent = Agent(agent_id, args)
+
+    time_step = 0
+    save_path = args.save_dir + '/' + args.scenario_name
     
     return "Init Success"
+
+
+@app.task
+def get_action(**kwargs):
+    global agent
+                    
+    s = kwargs["s"]
+    evaluate = kwargs["evaluate"]
+    print("Agent", agent_id, "received state:", s)
+
+    with torch.no_grad():
+        if evaluate:
+            action = agent.select_action(s[agent_id], 0, 0)
+        else:
+            action = agent.select_action(s[agent_id], args.noise_rate, args.epsilon)
+
+        return json.dumps({'action': action}, cls=NumpyEncoder)
+
+
+@app.task
+def get_target_next_action(**kwargs):
+    global agent
+                    
+    s = kwargs["s"]
+    print("Agent", agent_id, "received next state:", s)
+
+    with torch.no_grad():
+        action = agent.policy.actor_target_network(s)
+
+        return json.dumps({'action': action}, cls=NumpyEncoder)
+
+
+@app.task
+def train(**kwargs):
+    global agent
+    global time_step
+                    
+    transitions = kwargs["transitions"]
+    u_next = kwargs["u_next"]
+    print("Agent", agent_id, "received transitions and u_next")
+
+    agent.learn(transitions, u_next)
+
+    time_step += 1
+
+    return "One time step finished"
+
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
