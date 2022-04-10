@@ -17,6 +17,17 @@ class MADDPG:
         self.actor_target_network = Actor(args, agent_id)
         self.critic_target_network = Critic(args)
 
+        # create the dict for store the model
+        if not os.path.exists(self.args.save_dir):
+            os.mkdir(self.args.save_dir)
+        # path to save the model
+        self.model_path = self.args.save_dir + '/' + self.args.scenario_name
+        if not os.path.exists(self.model_path):
+            os.mkdir(self.model_path)
+        self.model_path = self.model_path + '/' + 'agent_%d' % agent_id
+        if not os.path.exists(self.model_path):
+            os.mkdir(self.model_path)
+        
         # 加载模型
         if os.path.exists(self.model_path + '/actor_params.pkl'):
             self.actor_network.load_state_dict(torch.load(self.model_path + '/actor_params.pkl'))
@@ -36,17 +47,6 @@ class MADDPG:
         # create the optimizer
         self.actor_optim = torch.optim.Adam(self.actor_network.parameters(), lr=self.args.lr_actor)
         self.critic_optim = torch.optim.Adam(self.critic_network.parameters(), lr=self.args.lr_critic)
-
-        # create the dict for store the model
-        if not os.path.exists(self.args.save_dir):
-            os.mkdir(self.args.save_dir)
-        # path to save the model
-        self.model_path = self.args.save_dir + '/' + self.args.scenario_name
-        if not os.path.exists(self.model_path):
-            os.mkdir(self.model_path)
-        self.model_path = self.model_path + '/' + 'agent_%d' % agent_id
-        if not os.path.exists(self.model_path):
-            os.mkdir(self.model_path)
 
 
     # soft update
