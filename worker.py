@@ -95,7 +95,12 @@ def train(**kwargs):
     u_next = np.asarray(kwargs["u_next"])
     print("Agent", agent_id, "received transitions and u_next", transitions, u_next)
     
-    agent.learn(transitions, u_next)
+    # Transform u_next into list of tensors
+    u_next_tensors = []
+    for a in u_next:
+        u_next_tensors.append(torch.tensor(a, dtype=torch.float))
+        
+    agent.learn(transitions, u_next_tensors)
 
     time_step += 1
 
