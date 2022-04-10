@@ -91,7 +91,7 @@ def train(**kwargs):
     global agent
     global time_step
                     
-    transitions = np.asarray(kwargs["transitions"])
+    transitions = kwargs["transitions"]
     u_next = np.asarray(kwargs["u_next"])
     print("Agent", agent_id, "received transitions and u_next", transitions, u_next)
     
