@@ -61,7 +61,7 @@ class Runner:
                 task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"s": s[agent_id].tolist(), "evaluate": False}, cls=NumpyEncoder)
                 tasks.append(task)
             for task in tasks:
-                result = task.get()
+                result = json.loads(task.get())
                 u.append(result["action"])
                 actions.append(result["action"])
 
