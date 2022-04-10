@@ -94,7 +94,8 @@ class Runner:
                 # Send u_next to each agent to train
                 tasks = []
                 for agent_id in range(self.args.n_agents):
-                    task = app.send_task("worker.train", queue='q' + str(agent_id), kwargs={"transitions": transitions.tolist(), "u_next": u_next}, cls=NumpyEncoder)
+                    data = json.loads(json.dumps({"transitions": transitions, "u_next": u_next}, cls=NumpyEncoder))
+                    task = app.send_task("worker.train", queue='q' + str(agent_id), kwargs=data)
                     tasks.append(task)
                 u_next = []
                 for task in tasks:

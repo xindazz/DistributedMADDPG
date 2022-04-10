@@ -93,8 +93,8 @@ def train(**kwargs):
                     
     transitions = np.asarray(kwargs["transitions"])
     u_next = np.asarray(kwargs["u_next"])
-    print("Agent", agent_id, "received transitions and u_next")
-
+    print("Agent", agent_id, "received transitions and u_next", transitions, u_next)
+    
     agent.learn(transitions, u_next)
 
     time_step += 1
