@@ -83,7 +83,7 @@ def get_target_next_action(**kwargs):
     with torch.no_grad():
         action = agent.policy.actor_target_network(torch.tensor(s, dtype=torch.float))
 
-        return json.dumps({'action': action}, cls=NumpyEncoder)
+        return json.dumps({'action': action.numpy()}, cls=NumpyEncoder)
 
 
 @app.task
