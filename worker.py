@@ -81,7 +81,7 @@ def get_target_next_action(**kwargs):
     print("Agent", agent_id, "received next state:", s)
 
     with torch.no_grad():
-        action = agent.policy.actor_target_network(torch.from_numpy(s, dtype=torch.float))
+        action = agent.policy.actor_target_network(torch.tensor(s, dtype=torch.float))
 
         return json.dumps({'action': action}, cls=NumpyEncoder)
 
