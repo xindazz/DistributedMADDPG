@@ -57,9 +57,7 @@ def init_agent(**kwargs):
 
 
 @app.task
-def get_action(**kwargs):
-    global agent
-                    
+def get_action(**kwargs):                    
     s = np.asarray(kwargs["s"])
     evaluate = kwargs["evaluate"]
     print("Agent", agent_id, "received state:")
@@ -74,9 +72,7 @@ def get_action(**kwargs):
 
 
 @app.task
-def get_target_next_action(**kwargs):
-    global agent
-                    
+def get_target_next_action(**kwargs):                    
     s = np.asarray(kwargs["s"])
     print("Agent", agent_id, "received next state:")
 
@@ -88,7 +84,6 @@ def get_target_next_action(**kwargs):
 
 @app.task
 def train(**kwargs):
-    global agent
     global time_step
                     
     transitions = kwargs["transitions"]
@@ -99,7 +94,7 @@ def train(**kwargs):
     u_next_tensors = []
     for a in u_next:
         u_next_tensors.append(torch.tensor(a, dtype=torch.float))
-        
+
     agent.learn(transitions, u_next_tensors)
 
     time_step += 1
