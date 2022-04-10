@@ -66,9 +66,9 @@ def get_action(**kwargs):
 
     with torch.no_grad():
         if evaluate:
-            action = agent.select_action(s[agent_id], 0, 0)
+            action = agent.select_action(s, 0, 0)
         else:
-            action = agent.select_action(s[agent_id], args.noise_rate, args.epsilon)
+            action = agent.select_action(s, args.noise_rate, args.epsilon)
 
         return json.dumps({'action': action}, cls=NumpyEncoder)
 
