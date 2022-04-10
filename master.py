@@ -58,7 +58,7 @@ class Runner:
             # Get action from every agent
             tasks = []
             for agent_id in range(self.args.n_agents):
-                task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"s": s[agent_id], "evaluate": False}, cls=NumpyEncoder)
+                task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"s": s[agent_id].tolist(), "evaluate": False}, cls=NumpyEncoder)
                 tasks.append(task)
             for task in tasks:
                 result = task.get()
@@ -84,7 +84,7 @@ class Runner:
                 # Send o_next to each agent and get their target network's next action u_next
                 tasks = []
                 for agent_id in range(self.args.n_agents):
-                    task = app.send_task("worker.get_target_next_action", queue='q' + str(agent_id), kwargs={"s": o_next[agent_id]}, cls=NumpyEncoder)
+                    task = app.send_task("worker.get_target_next_action", queue='q' + str(agent_id), kwargs={"s": o_next[agent_id].tolist()}, cls=NumpyEncoder)
                     tasks.append(task)
                 u_next = []
                 for task in tasks:
@@ -94,7 +94,7 @@ class Runner:
                 # Send u_next to each agent to train
                 tasks = []
                 for agent_id in range(self.args.n_agents):
-                    task = app.send_task("worker.train", queue='q' + str(agent_id), kwargs={"transitions": transitions, "u_next": u_next}, cls=NumpyEncoder)
+                    task = app.send_task("worker.train", queue='q' + str(agent_id), kwargs={"transitions": transitions.tolist(), "u_next": u_next.tolist()}, cls=NumpyEncoder)
                     tasks.append(task)
                 u_next = []
                 for task in tasks:
@@ -126,7 +126,7 @@ class Runner:
                 # Get action from every agent
                 tasks = []
                 for agent_id in range(self.args.n_agents):
-                    task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"s": s[agent_id], "evaluate": True}, cls=NumpyEncoder)
+                    task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"s": s[agent_id].tolist(), "evaluate": True}, cls=NumpyEncoder)
                     tasks.append(task)
                 actions = []
                 for task in tasks:
