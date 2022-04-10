@@ -32,9 +32,8 @@ class Runner:
         print("Start init all agents")
 
         tasks = []
-        # for i in range(2):
-        for i in range(self.args.n_agents):
-            task = app.send_task("worker.init_agent", queue='q' + str(i), kwargs={"agent_id": i, "args": vars(self.args)}, cls=NumpyEncoder)
+        for agent_id in range(self.args.n_agents):
+            task = app.send_task("worker.init_agent", queue='q' + str(agent_id), kwargs={"agent_id": agent_id, "args": vars(self.args)}, cls=NumpyEncoder)
             tasks.append(task)
 
         print("Response: ")
@@ -58,7 +57,7 @@ class Runner:
             # Get action from every agent
             tasks = []
             for agent_id in range(self.args.n_agents):
-                task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"agent_id": i, "args": vars(self.args), "s": s[agent_id].tolist(), "evaluate": False}, cls=NumpyEncoder)
+                task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"agent_id": agent_id, "args": vars(self.args), "s": s[agent_id].tolist(), "evaluate": False}, cls=NumpyEncoder)
                 tasks.append(task)
             for task in tasks:
                 result = json.loads(task.get())
@@ -84,7 +83,7 @@ class Runner:
                 # Send o_next to each agent and get their target network's next action u_next
                 tasks = []
                 for agent_id in range(self.args.n_agents):
-                    task = app.send_task("worker.get_target_next_action", queue='q' + str(agent_id), kwargs={"agent_id": i, "args": vars(self.args), "s": o_next[agent_id].tolist()}, cls=NumpyEncoder)
+                    task = app.send_task("worker.get_target_next_action", queue='q' + str(agent_id), kwargs={"agent_id": agent_id, "args": vars(self.args), "s": o_next[agent_id].tolist()}, cls=NumpyEncoder)
                     tasks.append(task)
                 u_next = []
                 for task in tasks:
@@ -94,7 +93,7 @@ class Runner:
                 # Send u_next to each agent to train
                 tasks = []
                 for agent_id in range(self.args.n_agents):
-                    data = json.loads(json.dumps({"agent_id": i, "args": vars(self.args), "transitions": transitions, "u_next": u_next}, cls=NumpyEncoder))
+                    data = json.loads(json.dumps({"agent_id": agent_id, "args": vars(self.args), "transitions": transitions, "u_next": u_next}, cls=NumpyEncoder))
                     task = app.send_task("worker.train", queue='q' + str(agent_id), kwargs=data)
                     tasks.append(task)
                 u_next = []
@@ -127,7 +126,7 @@ class Runner:
                 # Get action from every agent
                 tasks = []
                 for agent_id in range(self.args.n_agents):
-                    task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"agent_id": i, "args": vars(self.args), "s": s[agent_id].tolist(), "evaluate": True}, cls=NumpyEncoder)
+                    task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"agent_id": agent_id, "args": vars(self.args), "s": s[agent_id].tolist(), "evaluate": True}, cls=NumpyEncoder)
                     tasks.append(task)
                 actions = []
                 for task in tasks:
