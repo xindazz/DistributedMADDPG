@@ -88,7 +88,7 @@ class Runner:
                     tasks.append(task)
                 u_next = []
                 for task in tasks:
-                    result = task.get()
+                    result = json.loads(task.get())
                     u_next.append(result["action"])
 
                 # Send u_next to each agent to train
@@ -130,7 +130,7 @@ class Runner:
                     tasks.append(task)
                 actions = []
                 for task in tasks:
-                    result = task.get()
+                    result = json.loads(task.get())
                     actions.append(result["action"])
 
                 # Aversary agent acts randomly
