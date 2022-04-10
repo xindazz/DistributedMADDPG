@@ -31,21 +31,14 @@ save_path = None
 
 @app.task
 def init_agent(**kwargs):
-    global agent_id
-    global args
-    global agent
-    global env
-    global time_step
-    global save_path
+    global agent_id, args, agent, time_step, save_path
                     
-    # json_dump=kwargs['json_dump']
-    # json_load = json.loads(kwargs)
     agent_id = kwargs["agent_id"]
     myargs = kwargs["args"]
     print("Agent", agent_id, "received args:", myargs)
 
     args = parse_args(myargs)
-    env, args = make_env(args)
+    _, args = make_env(args)
 
     # initialize agent
     agent = Agent(agent_id, args)
@@ -57,10 +50,19 @@ def init_agent(**kwargs):
 
 
 @app.task
-def get_action(**kwargs):                    
+def get_action(**kwargs):       
+    global agent_id, args, agent, time_step, save_path
+
+    agent_id = kwargs["agent_id"]
+    myargs = kwargs["args"]
     s = np.asarray(kwargs["s"])
     evaluate = kwargs["evaluate"]
     print("Agent", agent_id, "received state:")
+
+    if agent == None:
+        args = parse_args(myargs)
+        _, args = make_env(args)
+        agent = Agent(agent_id, args)
 
     with torch.no_grad():
         if evaluate:
@@ -72,9 +74,18 @@ def get_action(**kwargs):
 
 
 @app.task
-def get_target_next_action(**kwargs):                    
+def get_target_next_action(**kwargs):       
+    global agent_id, args, agent, time_step, save_path
+
+    agent_id = kwargs["agent_id"]
+    myargs = kwargs["args"]
     s = np.asarray(kwargs["s"])
     print("Agent", agent_id, "received next state:")
+
+    if agent == None:
+        args = parse_args(myargs)
+        _, args = make_env(args)
+        agent = Agent(agent_id, args)
 
     with torch.no_grad():
         action = agent.policy.actor_target_network(torch.tensor(s, dtype=torch.float))
@@ -84,12 +95,19 @@ def get_target_next_action(**kwargs):
 
 @app.task
 def train(**kwargs):
-    global time_step
-                    
+    global agent_id, args, agent, time_step, save_path
+
+    agent_id = kwargs["agent_id"]
+    myargs = kwargs["args"]             
     transitions = kwargs["transitions"]
     u_next = np.asarray(kwargs["u_next"])
     print("Agent", agent_id, "received transitions and u_next", transitions, u_next)
     
+    if agent == None:
+        args = parse_args(myargs)
+        _, args = make_env(args)
+        agent = Agent(agent_id, args)
+
     # Transform u_next into list of tensors
     u_next_tensors = []
     for a in u_next:
