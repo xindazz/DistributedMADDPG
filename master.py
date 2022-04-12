@@ -50,12 +50,12 @@ class Runner:
 
         # separate agents observation shape and adversaries observation shape
         obs_shape_agents = self.args.obs_shape[: self.args.n_agents]
-        obs_shape_adversaries = self.args.obs_shape[: self.args.n_agents]
+        obs_shape_adversaries = self.args.obs_shape[self.args.n_agents: ]
 
         # separate agents action shape and adversaries action shape
         action_shape_agents = self.args.action_shape[: self.args.n_agents]
         action_shape_adversaries = self.args.action_shape[self.args.n_agents :]
-
+        
         tasks = []
         # initialize agents, with queue name q{agent_id}
         # make sure to send the right observation and action shapes
@@ -92,7 +92,7 @@ class Runner:
                 cls=NumpyEncoder,
             )
             tasks.append(task)
-
+        print("Init:", obs_shape_adversaries, action_shape_adversaries)
         for task in tasks:
             print(task.get())
 
@@ -151,6 +151,7 @@ class Runner:
                     cls=NumpyEncoder,
                 )
                 tasks.append(task)
+                print("State:", s_adversaries[agent_id].tolist(), s_adversaries[agent_id].shape)
 
             for task in tasks:
                 result = json.loads(task.get())
@@ -193,8 +194,8 @@ class Runner:
             s = s_next
 
             # sample transitions and train agents
-            if self.buffer_agent.current_size >= self.args.batch_size:
-                transitions_agent = self.buffer_agent.sample(self.args.batch_size)
+            if self.buffer_agents.current_size >= self.args.batch_size:
+                transitions_agent = self.buffer_agents.sample(self.args.batch_size)
                 # Parse transitions into o_next
                 o_next = []
                 for agent_id in range(self.args.n_agents):
@@ -250,7 +251,7 @@ class Runner:
                 # Parse transitions into o_next
                 o_next = []
                 for agent_id in range(self.args.num_adversaries):
-                    o_next.append(transitions_agent["o_next_%d" % agent_id])
+                    o_next.append(transitions_adversary["o_next_%d" % agent_id])
 
                 # Send o_next to each agent and get their target network's next action u_next
                 tasks = []
@@ -280,7 +281,7 @@ class Runner:
                             {
                                 "agent_id": agent_id,
                                 "args": vars(self.args),
-                                "transitions": transitions_agent,
+                                "transitions": transitions_adversary,
                                 "u_next": u_next,
                             },
                             cls=NumpyEncoder,

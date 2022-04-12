@@ -5,13 +5,14 @@ from maddpg.maddpg_distributed import MADDPG
 
 
 class Agent:
-    def __init__(self, agent_id, args, obs_shape, action_shape):
+    def __init__(self, agent_id, args, num_actors, obs_shape, action_shape):
         self.args = args
         self.agent_id = agent_id
+        self.num_actors = num_actors
 
         self.actor_action_shape = action_shape[agent_id]
 
-        self.policy = MADDPG(args, agent_id, obs_shape, action_shape)
+        self.policy = MADDPG(args, agent_id, num_actors, obs_shape, action_shape)
 
     def select_action(self, o, noise_rate, epsilon):
         # take a random action with a small probability

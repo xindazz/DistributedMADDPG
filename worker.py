@@ -30,11 +30,12 @@ agent = None
 env = None
 time_step = None
 save_path = None
+is_adversary = False
 
 
 @app.task
 def init_agent(**kwargs):
-    global agent_id, args, agent, time_step, save_path
+    global agent_id, args, agent, time_step, save_path, is_adversary
 
     agent_id = kwargs["agent_id"]
     myargs = kwargs["args"]
@@ -44,13 +45,18 @@ def init_agent(**kwargs):
     # get the action shape, which is different between agent and adversary
     action_shape = kwargs["action_shape"]
 
+    # check if the agent is an adversary
+    is_adversary = kwargs["is_adversary"]
+
     print("Agent", agent_id, "received args:", myargs)
 
     args = parse_args(myargs)
     _, args = make_env(args)
 
+    num_actors = args.n_agents if (is_adversary) else args.num_adversaries
+
     # initialize agent
-    agent = Agent(agent_id, args, obs_shape, action_shape)
+    agent = Agent(agent_id, args, num_actors, obs_shape, action_shape)
 
     time_step = 0
     save_path = args.save_dir + "/" + args.scenario_name

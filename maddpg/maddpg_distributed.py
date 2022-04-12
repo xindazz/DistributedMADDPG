@@ -8,11 +8,13 @@ class MADDPG:
         self,
         args,
         agent_id,
+        num_actors,
         obs_shape,
         action_shape,
     ):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
         self.args = args
         self.agent_id = agent_id
+        self.num_actors = num_actors
         self.train_step = 0
 
         # actor can only see part of the observation/action
@@ -110,7 +112,9 @@ class MADDPG:
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         r = transitions["r_%d" % self.agent_id]  # 训练时只需要自己的reward
         o, u, o_next = [], [], []  # 用来装每个agent经验中的各项
-        for agent_id in range(self.args.n_agents):
+
+        # only train with the number of actors on the same team (agent or adversary)
+        for agent_id in range(self.num_actors):
             o.append(transitions["o_%d" % agent_id])
             u.append(transitions["u_%d" % agent_id])
             o_next.append(transitions["o_next_%d" % agent_id])
