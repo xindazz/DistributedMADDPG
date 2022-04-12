@@ -11,16 +11,18 @@ from agent_distributed import Agent
 from common.utils import make_env
 
 
-#run this code with "celery -A worker worker --loglevel=info --concurrency=1" on the 4 worker machines
+# run this code with "celery -A worker worker --loglevel=info --concurrency=1 --queues=q2" on the 4 worker machines
 
- 
+
 # Make sure that the 'myguest' user exists with 'myguestpwd' on the RabbitMQ server and your load balancer has been set up correctly.
-# My load balancer address is'RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com'. 
+# My load balancer address is'RabbitMQLB-8e09cd48a60c9a1e.elb.us-east-2.amazonaws.com'.
 # Below you will need to change it to your load balancer's address.
 
-app = celery.Celery('worker',
-                        broker='amqp://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com',
-                        backend='rpc://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com')
+app = celery.Celery(
+    "worker",
+    broker="amqp://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com",
+    backend="rpc://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com",
+)
 
 agent_id = None
 args = None
@@ -29,10 +31,11 @@ env = None
 time_step = None
 save_path = None
 
+
 @app.task
 def init_agent(**kwargs):
     global agent_id, args, agent, time_step, save_path
-                    
+
     agent_id = kwargs["agent_id"]
     myargs = kwargs["args"]
     print("Agent", agent_id, "received args:", myargs)
@@ -44,13 +47,13 @@ def init_agent(**kwargs):
     agent = Agent(agent_id, args)
 
     time_step = 0
-    save_path = args.save_dir + '/' + args.scenario_name
-    
-    return "Init Success"
+    save_path = args.save_dir + "/" + args.scenario_name
+
+    return "Successfully initialized agent " + agent_id + "."
 
 
 @app.task
-def get_action(**kwargs):       
+def get_action(**kwargs):
     global agent_id, args, agent, time_step, save_path
 
     agent_id = kwargs["agent_id"]
@@ -70,11 +73,11 @@ def get_action(**kwargs):
         else:
             action = agent.select_action(s, args.noise_rate, args.epsilon)
 
-        return json.dumps({'action': action}, cls=NumpyEncoder)
+        return json.dumps({"action": action}, cls=NumpyEncoder)
 
 
 @app.task
-def get_target_next_action(**kwargs):       
+def get_target_next_action(**kwargs):
     global agent_id, args, agent, time_step, save_path
 
     agent_id = kwargs["agent_id"]
@@ -90,7 +93,7 @@ def get_target_next_action(**kwargs):
     with torch.no_grad():
         action = agent.policy.actor_target_network(torch.tensor(s, dtype=torch.float))
 
-        return json.dumps({'action': action.numpy()}, cls=NumpyEncoder)
+        return json.dumps({"action": action.numpy()}, cls=NumpyEncoder)
 
 
 @app.task
@@ -98,11 +101,11 @@ def train(**kwargs):
     global agent_id, args, agent, time_step, save_path
 
     agent_id = kwargs["agent_id"]
-    myargs = kwargs["args"]             
+    myargs = kwargs["args"]
     transitions = kwargs["transitions"]
     u_next = np.asarray(kwargs["u_next"])
     print("Agent", agent_id, "received transitions and u_next", transitions, u_next)
-    
+
     if agent == None:
         args = parse_args(myargs)
         _, args = make_env(args)
@@ -124,15 +127,35 @@ class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
-        elif isinstance(obj, np.int64): 
+        elif isinstance(obj, np.int64):
             return int(obj)
         return json.JSONEncoder.default(self, obj)
 
 
 class Arguments:
-    def __init__(self, scenario_name, max_episode_len, time_steps, num_adversaries, lr_actor, lr_critic, 
-                    epsilon, noise_rate, gamma, tau, buffer_size, batch_size, save_dir, save_rate, model_dir, 
-                    evaluate_episodes, evaluate_episode_len, evaluate, evaluate_rate, render):
+    def __init__(
+        self,
+        scenario_name,
+        max_episode_len,
+        time_steps,
+        num_adversaries,
+        lr_actor,
+        lr_critic,
+        epsilon,
+        noise_rate,
+        gamma,
+        tau,
+        buffer_size,
+        batch_size,
+        save_dir,
+        save_rate,
+        model_dir,
+        evaluate_episodes,
+        evaluate_episode_len,
+        evaluate,
+        evaluate_rate,
+        render,
+    ):
         self.scenario_name = scenario_name
         self.max_episode_len = max_episode_len
         self.time_steps = time_steps
@@ -153,7 +176,7 @@ class Arguments:
         self.evaluate = evaluate
         self.evaluate_rate = evaluate_rate
         self.render = render
-        
+
 
 def parse_args(myargs):
     scenario_name = myargs["scenario_name"]
@@ -177,8 +200,27 @@ def parse_args(myargs):
     evaluate_rate = myargs["evaluate_rate"]
     render = myargs["render"]
 
-    args = Arguments(scenario_name, max_episode_len, time_steps, num_adversaries, lr_actor, lr_critic, 
-                    epsilon, noise_rate, gamma, tau, buffer_size, batch_size, save_dir, save_rate, model_dir, 
-                    evaluate_episodes, evaluate_episodes_len, evaluate, evaluate_rate, render)
+    args = Arguments(
+        scenario_name,
+        max_episode_len,
+        time_steps,
+        num_adversaries,
+        lr_actor,
+        lr_critic,
+        epsilon,
+        noise_rate,
+        gamma,
+        tau,
+        buffer_size,
+        batch_size,
+        save_dir,
+        save_rate,
+        model_dir,
+        evaluate_episodes,
+        evaluate_episodes_len,
+        evaluate,
+        evaluate_rate,
+        render,
+    )
 
     return args
