@@ -68,6 +68,7 @@ class Runner:
                     "args": vars(self.args),
                     "obs_shape": obs_shape_agents,
                     "action_shape": action_shape_agents,
+                    "is_adversary": False,
                 },
                 cls=NumpyEncoder,
             )
@@ -88,6 +89,7 @@ class Runner:
                     "args": vars(self.args),
                     "obs_shape": obs_shape_adversaries,
                     "action_shape": action_shape_adversaries,
+                    "is_adversary": True,
                 },
                 cls=NumpyEncoder,
             )

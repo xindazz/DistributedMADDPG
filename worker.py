@@ -53,7 +53,7 @@ def init_agent(**kwargs):
     args = parse_args(myargs)
     _, args = make_env(args)
 
-    num_actors = args.n_agents if (is_adversary) else args.num_adversaries
+    num_actors = args.num_adversaries if (is_adversary) else args.n_agents
 
     # initialize agent
     agent = Agent(agent_id, args, num_actors, obs_shape, action_shape)
