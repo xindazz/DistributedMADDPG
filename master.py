@@ -94,7 +94,7 @@ class Runner:
                 cls=NumpyEncoder,
             )
             tasks.append(task)
-        print("Init:", obs_shape_adversaries, action_shape_adversaries)
+
         for task in tasks:
             print(task.get())
 
@@ -153,7 +153,6 @@ class Runner:
                     cls=NumpyEncoder,
                 )
                 tasks.append(task)
-                print("State:", s_adversaries[agent_id].tolist(), s_adversaries[agent_id].shape)
 
             for task in tasks:
                 result = json.loads(task.get())
@@ -360,6 +359,10 @@ class Runner:
         for episode in range(self.args.evaluate_episodes):
             # reset the environment
             s = self.env.reset()
+
+            s_agents = s[:self.args.n_agents]
+            s_adversaries = s[self.args.n_agents:]
+
             rewards = 0
             for _ in range(self.args.evaluate_episode_len):
                 if self.args.render:
@@ -374,7 +377,7 @@ class Runner:
                         kwargs={
                             "agent_id": agent_id,
                             "args": vars(self.args),
-                            "s": s[agent_id].tolist(),
+                            "s": s_agents[agent_id].tolist(),
                             "evaluate": True,
                         },
                         cls=NumpyEncoder,
@@ -385,11 +388,30 @@ class Runner:
                     result = json.loads(task.get())
                     actions.append(result["action"])
 
-                # Aversary agent acts randomly
-                for i in range(self.args.n_agents, self.args.n_players):
-                    actions.append(
-                        [0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0]
+                # Get action from every adversary
+                tasks = []
+                for agent_id in range(self.args.num_adversaries):
+                    task = app.send_task(
+                        "worker.get_action",
+                        queue="a" + str(agent_id),
+                        kwargs={
+                            "agent_id": agent_id,
+                            "args": vars(self.args),
+                            "s": s_adversaries[agent_id].tolist(),
+                            "evaluate": True,
+                        },
+                        cls=NumpyEncoder,
                     )
+                    tasks.append(task)
+                for task in tasks:
+                    result = json.loads(task.get())
+                    actions.append(result["action"])
+
+                # # Aversary agent acts randomly
+                # for i in range(self.args.n_agents, self.args.n_players):
+                #     actions.append(
+                #         [0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0]
+                #     )
 
                 s_next, r, done, info = self.env.step(actions)
                 rewards += r[0]
