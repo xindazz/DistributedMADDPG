@@ -5,9 +5,9 @@ import torch.nn.functional as F
 
 # define the actor network
 class Actor(nn.Module):
-    def __init__(self, args, actor_obs_shape, actor_action_shape):
+    def __init__(self, high_action, actor_obs_shape, actor_action_shape):
         super(Actor, self).__init__()
-        self.max_action = args.high_action
+        self.max_action = high_action
         self.fc1 = nn.Linear(actor_obs_shape, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 64)
@@ -23,10 +23,10 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, args):
+    def __init__(self, high_action, critic_obs_shape, critic_action_shape):
         super(Critic, self).__init__()
-        self.max_action = args.high_action
-        self.fc1 = nn.Linear(sum(args.obs_shape) + sum(args.action_shape), 64)
+        self.max_action = high_action
+        self.fc1 = nn.Linear(sum(critic_obs_shape) + sum(critic_action_shape), 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 64)
         self.q_out = nn.Linear(64, 1)

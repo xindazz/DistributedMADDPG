@@ -38,15 +38,19 @@ def init_agent(**kwargs):
 
     agent_id = kwargs["agent_id"]
     myargs = kwargs["args"]
+
+    # get the observation shape, which is different between agent and adversary
     obs_shape = kwargs["obs_shape"]
+    # get the action shape, which is different between agent and adversary
     action_shape = kwargs["action_shape"]
+
     print("Agent", agent_id, "received args:", myargs)
 
     args = parse_args(myargs)
     _, args = make_env(args)
 
     # initialize agent
-    agent = Agent(agent_id, args)
+    agent = Agent(agent_id, args, obs_shape, action_shape)
 
     time_step = 0
     save_path = args.save_dir + "/" + args.scenario_name

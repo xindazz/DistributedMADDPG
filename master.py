@@ -48,13 +48,27 @@ class Runner:
         # upload params to agents
         print("Start initializing all agents...")
 
+        # separate agents observation shape and adversaries observation shape
+        obs_shape_agents = self.args.obs_shape[: self.args.n_agents]
+        obs_shape_adversaries = self.args.obs_shape[: self.args.n_agents]
+
+        # separate agents action shape and adversaries action shape
+        action_shape_agents = self.args.action_shape[: self.args.n_agents]
+        action_shape_adversaries = self.args.action_shape[self.args.n_agents :]
+
         tasks = []
         # initialize agents, with queue name q{agent_id}
+        # make sure to send the right observation and action shapes
         for agent_id in range(self.args.n_agents):
             task = app.send_task(
                 "worker.init_agent",
                 queue="q" + str(agent_id),
-                kwargs={"agent_id": agent_id, "args": vars(self.args)},
+                kwargs={
+                    "agent_id": agent_id,
+                    "args": vars(self.args),
+                    "obs_shape": obs_shape_agents,
+                    "action_shape": action_shape_agents,
+                },
                 cls=NumpyEncoder,
             )
             tasks.append(task)
@@ -64,11 +78,17 @@ class Runner:
 
         tasks = []
         # initialize adversaries, with queue name a{agent_id}
+        # make sure to send the right observation and action shapes
         for agent_id in range(self.args.num_adversaries):
             task = app.send_task(
                 "worker.init_agent",
                 queue="a" + str(agent_id),
-                kwargs={"agent_id": agent_id, "args": vars(self.args)},
+                kwargs={
+                    "agent_id": agent_id,
+                    "args": vars(self.args),
+                    "obs_shape": obs_shape_adversaries,
+                    "action_shape": action_shape_adversaries,
+                },
                 cls=NumpyEncoder,
             )
             tasks.append(task)
