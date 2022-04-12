@@ -11,9 +11,10 @@ if __name__ == '__main__':
     # get the params
     args = get_args()
     env, args = make_env(args)
-    runner = Runner(args, env)
-    if args.evaluate:
-        returns = runner.evaluate()
-        print('Average returns is', returns)
-    else:
-        runner.run()
+    print(vars(args))
+    # runner = Runner(args, env)
+    # if args.evaluate:
+    #     returns = runner.evaluate()
+    #     print('Average returns is', returns)
+    # else:
+    #     runner.run()

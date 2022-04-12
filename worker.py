@@ -89,9 +89,7 @@ def get_target_next_action(**kwargs):
 
     with torch.no_grad():
         action = agent.policy.actor_target_network(torch.tensor(s, dtype=torch.float))
-
         return json.dumps({'action': action.numpy()}, cls=NumpyEncoder)
-
 
 @app.task
 def train(**kwargs):
@@ -112,11 +110,31 @@ def train(**kwargs):
     u_next_tensors = []
     for a in u_next:
         u_next_tensors.append(torch.tensor(a, dtype=torch.float))
-
     agent.learn(transitions, u_next_tensors)
-
     time_step += 1
+    return "One time step finished"
 
+
+@app.task
+def train_single_adversary(**kwargs):
+    global agent_id, args, agent, time_step, save_path
+
+    agent_id = kwargs["agent_id"]
+    myargs = kwargs["args"]
+    transitions = kwargs["transitions"]
+    print("Agent", agent_id, "received transitions and u_next", transitions)
+
+    if agent == None:
+        args = parse_args(myargs)
+        _, args = make_env(args)
+        agent = Agent(agent_id, args)
+    
+    with torch.no_grad():
+        s = transitions['o_next_%d' % agent_id]
+        action = agent.policy.actor_target_network(torch.tensor(s, dtype=torch.float))
+    
+    agent.learn(transitions, [action])
+    time_step += 1
     return "One time step finished"
 
 
