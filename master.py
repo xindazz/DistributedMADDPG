@@ -45,15 +45,29 @@ class Runner:
             os.makedirs(self.save_path)
 
     def _init_agents(self):
-        # upload params to agents, queue name is "q{agent_id}:
+        # upload params to agents
         print("Start initializing all agents...")
 
         tasks = []
-        # initialize all agents, including adversaries
-        for agent_id in range(self.args.n_players):
+        # initialize agents, with queue name q{agent_id}
+        for agent_id in range(self.args.n_agents):
             task = app.send_task(
                 "worker.init_agent",
                 queue="q" + str(agent_id),
+                kwargs={"agent_id": agent_id, "args": vars(self.args)},
+                cls=NumpyEncoder,
+            )
+            tasks.append(task)
+
+        for task in tasks:
+            print(task.get())
+
+        tasks = []
+        # initialize adversaries, with queue name a{agent_id}
+        for agent_id in range(self.args.num_adversaries):
+            task = app.send_task(
+                "worker.init_agent",
+                queue="a" + str(agent_id),
                 kwargs={"agent_id": agent_id, "args": vars(self.args)},
                 cls=NumpyEncoder,
             )
@@ -70,51 +84,89 @@ class Runner:
             if time_step % self.episode_limit == 0:
                 s = self.env.reset()
 
+            # split state into those observable by agents and those observable by adversaries
+            s_agents = s[: self.args.n_agents]
+            s_adversaries = s[self.args.n_agents :]
+
             # u contains the actions of the agents that we are training
             u = []
             # actions contains actions of all agents in the environment, including those of the adversaries
             actions = []
 
-            # Get action from every agent
+            # get actions from agents
+            actions_agents = []
             tasks = []
-            for agent_id in range(self.args.n_players):
+            for agent_id in range(self.args.n_agents):
                 task = app.send_task(
                     "worker.get_action",
                     queue="q" + str(agent_id),
                     kwargs={
                         "agent_id": agent_id,
                         "args": vars(self.args),
-                        "s": s[agent_id].tolist(),
+                        "s": s_agents[agent_id].tolist(),
                         "evaluate": False,
                     },
                     cls=NumpyEncoder,
                 )
                 tasks.append(task)
 
-            # could maybe change? not sure
-            for taskidx in range(len(tasks)):
-                task = task[taskidx]
-                result = json.loads(task.get())
-                if taskidx not in self.adversary_ids:
-                    u.append(result["action"])
-                    actions.append(result["action"])
-                else:
-                    actions.append(result["action"])
+            for task in tasks:
+                result = json.load(task.get())
+                actions_agents.append(result["action"])
+                actions.append(result["action"])
+
+            # get actions from adversaries
+            actions_adversaries = []
+            tasks = []
+            for agent_id in range(self.args.num_adversaries):
+                task = app.send_task(
+                    "worker.get_action",
+                    queue="a" + str(agent_id),
+                    kwargs={
+                        "agent_id": agent_id,
+                        "args": vars(self.args),
+                        "s": s_adversaries[agent_id].tolist(),
+                        "evaluate": False,
+                    },
+                    cls=NumpyEncoder,
+                )
+                tasks.append(task)
+
+            for task in tasks:
+                result = json.load(task.get())
+                actions_adversaries.append(result["action"])
+                actions.append(result["action"])
+
+            # # could maybe change? not sure
+            # for taskidx in range(len(tasks)):
+            #     task = task[taskidx]
+            #     result = json.loads(task.get())
+            #     if taskidx not in self.adversary_ids:
+            #         u.append(result["action"])
+            #         actions.append(result["action"])
+            #     else:
+            #         actions.append(result["action"])
 
             # get environment for the next time step
             s_next, r, done, info = self.env.step(actions)
 
+            s_next_agents = s_next[: self.args.n_agents]
+            s_next_adversaries = s_next[self.args.n_agents :]
+
+            r_agents = r[: self.args.n_agents]
+            r_adversaries = r[self.args.n_agents :]
+
             self.buffer_agents.store_episode(
-                s[: self.args.n_agents],
-                u,
-                r[: self.args.n_agents],
-                s_next[: self.args.n_agents],
+                s_agents,
+                actions_agents,
+                r_agents,
+                s_next_agents,
             )
             self.buffer_adversaries.store_episode(
-                s[self.args.n_agents :],
-                actions[self.args.n_agents :],
-                r[self.args.n_agents :],
-                s_next[self.args.n_agents :],
+                s_adversaries,
+                actions_adversaries,
+                r_adversaries,
+                s_next_adversaries,
             )
 
             # update the state of the environment
@@ -166,6 +218,7 @@ class Runner:
                         "worker.train", queue="q" + str(agent_id), kwargs=data
                     )
                     tasks.append(task)
+
                 for task in tasks:
                     result = task.get()
 
@@ -176,19 +229,19 @@ class Runner:
                 )
                 # Parse transitions into o_next
                 o_next = []
-                for i in range(self.args.num_adversaries):
-                    o_next.append(transitions_agent["o_next_%d" % i])
+                for agent_id in range(self.args.num_adversaries):
+                    o_next.append(transitions_agent["o_next_%d" % agent_id])
 
                 # Send o_next to each agent and get their target network's next action u_next
                 tasks = []
-                for agent_id in range(self.args.n_agents, self.args.n_players):
+                for agent_id in range(self.args.num_adversaries):
                     task = app.send_task(
                         "worker.get_target_next_action",
-                        queue="q" + str(agent_id),
+                        queue="a" + str(agent_id),
                         kwargs={
                             "agent_id": agent_id,
                             "args": vars(self.args),
-                            "s": o_next[agent_id - self.args.n_agents].tolist(),
+                            "s": o_next[agent_id].tolist(),
                         },
                         cls=NumpyEncoder,
                     )
@@ -201,7 +254,7 @@ class Runner:
 
                 # Send u_next to each agent to train
                 tasks = []
-                for agent_id in range(self.args.n_agents, self.args.n_players):
+                for agent_id in range(self.args.num_adversaries):
                     data = json.loads(
                         json.dumps(
                             {
@@ -214,31 +267,31 @@ class Runner:
                         )
                     )
                     task = app.send_task(
-                        "worker.train", queue="q" + str(agent_id), kwargs=data
+                        "worker.train", queue="a" + str(agent_id), kwargs=data
                     )
                     tasks.append(task)
 
                 for task in tasks:
                     result = task.get()
 
-                    data = json.loads(
-                        json.dumps(
-                            {
-                                "agent_id": agent_id,
-                                "args": vars(self.args),
-                                "transitions": transitions_adversary,
-                            },
-                            cls=NumpyEncoder,
-                        )
-                    )
-                    task = app.send_task(
-                        "worker.train_single_adversary",
-                        queue="q" + str(agent_id),
-                        kwargs=data,
-                    )
-                    tasks.append(task)
-                for task in tasks:
-                    result = task.get()
+                #     data = json.loads(
+                #         json.dumps(
+                #             {
+                #                 "agent_id": agent_id,
+                #                 "args": vars(self.args),
+                #                 "transitions": transitions_adversary,
+                #             },
+                #             cls=NumpyEncoder,
+                #         )
+                #     )
+                #     task = app.send_task(
+                #         "worker.train_single_adversary",
+                #         queue="q" + str(agent_id),
+                #         kwargs=data,
+                #     )
+                #     tasks.append(task)
+                # for task in tasks:
+                #     result = task.get()
 
             # # for multiple adversarys
             # if self.buffer_adversarys.current_size >= self.args.batch_size:
