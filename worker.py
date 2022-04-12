@@ -38,6 +38,8 @@ def init_agent(**kwargs):
 
     agent_id = kwargs["agent_id"]
     myargs = kwargs["args"]
+    obs_shape = kwargs["obs_shape"]
+    action_shape = kwargs["action_shape"]
     print("Agent", agent_id, "received args:", myargs)
 
     args = parse_args(myargs)

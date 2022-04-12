@@ -111,7 +111,7 @@ class Runner:
                 tasks.append(task)
 
             for task in tasks:
-                result = json.load(task.get())
+                result = json.loads(task.get())
                 actions_agents.append(result["action"])
                 actions.append(result["action"])
 
@@ -133,7 +133,7 @@ class Runner:
                 tasks.append(task)
 
             for task in tasks:
-                result = json.load(task.get())
+                result = json.loads(task.get())
                 actions_adversaries.append(result["action"])
                 actions.append(result["action"])
 

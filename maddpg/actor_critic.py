@@ -5,13 +5,13 @@ import torch.nn.functional as F
 
 # define the actor network
 class Actor(nn.Module):
-    def __init__(self, args, agent_id):
+    def __init__(self, args, actor_obs_shape, actor_action_shape):
         super(Actor, self).__init__()
         self.max_action = args.high_action
-        self.fc1 = nn.Linear(args.obs_shape[agent_id], 64)
+        self.fc1 = nn.Linear(actor_obs_shape, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 64)
-        self.action_out = nn.Linear(64, args.action_shape[agent_id])
+        self.action_out = nn.Linear(64, actor_action_shape)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
