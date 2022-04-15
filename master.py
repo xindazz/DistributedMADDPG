@@ -12,6 +12,9 @@ from common.replay_buffer import Buffer
 from worker import app, NumpyEncoder
 import time
 
+from gym import wrappers
+import pyvirtualdisplay
+
 
 class Runner:
     def __init__(self, args, env):
@@ -43,6 +46,12 @@ class Runner:
         self.save_path = self.args.save_dir + "/" + self.args.scenario_name
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
+
+        if self.args.render:
+        #     # pyvirtualdisplay.Display(visible=True, size=(100,60))
+        #     self.env = wrappers.Monitor(self.env, "results", force=True)
+            # self.env.monitor.start("tmp/", force=True)
+            self.img = plt.imshow(self.env.render(mode='rgb_array'))
 
     def _init_agents(self):
         # upload params to agents
@@ -354,6 +363,7 @@ class Runner:
             self.noise = max(0.05, self.noise - 0.0000005)
             self.epsilon = max(0.05, self.epsilon - 0.0000005)
 
+
     def evaluate(self):
         returns = []
         for episode in range(self.args.evaluate_episodes):
@@ -366,7 +376,11 @@ class Runner:
             rewards = 0
             for _ in range(self.args.evaluate_episode_len):
                 if self.args.render:
-                    self.env.render()
+                    # with pyvirtualdisplay.Display(visible=0, size=(100,60)) as disp:
+                    # self.env.render(mode='rgb_array')
+                    img.set_data(self.env.render(mode='rgb_array')) # just update the data
+                    display.display(plt.gcf())
+                    display.clear_output(wait=True)
 
                 # Get action from every agent
                 tasks = []
@@ -418,4 +432,5 @@ class Runner:
                 s = s_next
             returns.append(rewards)
             print("Returns is", rewards)
+
         return sum(returns) / self.args.evaluate_episodes
