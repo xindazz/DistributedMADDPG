@@ -1,3 +1,4 @@
 model/
+multiagent_particle_env/
 
 .DS_Store
