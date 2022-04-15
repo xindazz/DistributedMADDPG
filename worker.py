@@ -57,7 +57,7 @@ def get_action(**kwargs):
     myargs = kwargs["args"]
     s = np.asarray(kwargs["s"])
     evaluate = kwargs["evaluate"]
-    print("Agent", agent_id, "received state:")
+    # print("Agent", agent_id, "received state:")
 
     if agent == None:
         args = parse_args(myargs)
@@ -80,7 +80,7 @@ def get_target_next_action(**kwargs):
     agent_id = kwargs["agent_id"]
     myargs = kwargs["args"]
     s = np.asarray(kwargs["s"])
-    print("Agent", agent_id, "received next state:")
+    # print("Agent", agent_id, "received next state:")
 
     if agent == None:
         args = parse_args(myargs)
@@ -101,7 +101,7 @@ def train(**kwargs):
     myargs = kwargs["args"]             
     transitions = kwargs["transitions"]
     u_next = np.asarray(kwargs["u_next"])
-    print("Agent", agent_id, "received transitions and u_next", transitions, u_next)
+    # print("Agent", agent_id, "received transitions and u_next", transitions, u_next)
     
     if agent == None:
         args = parse_args(myargs)

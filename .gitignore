@@ -4,6 +4,7 @@ model/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+common/__pycache__/
 *.py[cod]
 *$py.class
 
