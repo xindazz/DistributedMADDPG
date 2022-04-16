@@ -47,10 +47,15 @@ class Runner:
             s = s_next
             if self.buffer.current_size >= self.args.batch_size:
                 transitions = self.buffer.sample(self.args.batch_size)
+                # Parse transitions into o_next
+                u_next = []
+                for agent_id in range(self.args.n_agents):
+                    o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float)
+                    u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
+
                 for agent in self.agents:
-                    other_agents = self.agents.copy()
-                    other_agents.remove(agent)
-                    agent.learn(transitions, other_agents)
+                    agent.learn(transitions, u_next)
+
             if time_step > 0 and time_step % self.args.evaluate_rate == 0:
                 returns.append(self.evaluate())
                 plt.figure()
