@@ -5,18 +5,12 @@ import torch
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import celery
 
-from agent_distributed import Agent
+from agent import Agent
 from common.replay_buffer import Buffer
-from worker import app, NumpyEncoder
 import time
 
 from mpi4py import MPI
-
-comm = MPI.COMM_WORLD
-size = comm.Get_size()
-rank = comm.Get_rank()
 
 
 class Runner:
@@ -42,8 +36,14 @@ class Runner:
 
 
     def run(self):
+        comm = MPI.COMM_WORLD
+        size = comm.Get_size()
+        rank = comm.Get_rank()
+
         s = [np.empty(self.args.obs_shape[agent_id], dtype=np.float64) for agent_id in range(self.args.n_agents)]
+        o_next = [np.empty(self.args.obs_shape[agent_id], dtype=np.float64) for agent_id in range(self.args.n_agents)]
         u = [np.empty(self.args.action_shape[agent_id], dtype=np.float64) for agent_id in range(self.args.n_agents)]
+        u_next = [np.empty(self.args.action_shape[agent_id], dtype=np.float64) for agent_id in range(self.args.n_agents)]
 
         # Master
         if rank == 0:
@@ -52,7 +52,6 @@ class Runner:
                 # reset the environment
                 if time_step % self.episode_limit == 0:
                     s = self.env.reset()
-
                 
                 # actions contains actions of all agents in the environment, including those on the opposing team
                 actions = []
@@ -60,10 +59,10 @@ class Runner:
                 # Get action from every agent
                 for agent_id in range(self.args.n_agents):
                     # task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"agent_id": agent_id, "args": vars(self.args), "s": s[agent_id].tolist(), "evaluate": False}, cls=NumpyEncoder)
-                    task = comm.isend(s[agent_id], dest=agent_id + 1, tag=0)
+                    task = comm.isend(s[agent_id], dest=agent_id+1, tag=0)
                 requests = []
                 for agent_id in range(self.args.n_agents):
-                    req = comm.irecv(u[agent_id], source=agent_id + 1, tag=1)
+                    req = comm.irecv(u[agent_id], source=agent_id+1, tag=1)
                     requests.append(req)
                 for req in requests:
                     req.wait()
@@ -88,24 +87,24 @@ class Runner:
                         o_next.append(transitions['o_next_%d' % agent_id])
 
                     # Send o_next to each agent and get their target network's next action u_next
-                    tasks = []
                     for agent_id in range(self.args.n_agents):
                         # task = app.send_task("worker.get_target_next_action", queue='q' + str(agent_id), kwargs={"agent_id": agent_id, "args": vars(self.args), "s": o_next[agent_id].tolist()}, cls=NumpyEncoder)
-                        tasks.append(task)
-                    u_next = []
-                    for task in tasks:
-                        result = json.loads(task.get())
-                        u_next.append(result["action"])
+                        req = comm.isend(o_next[agent_id], dest=agent_id+1, tag=2)
+                    requests = []
+                    for agent_id in range(self.args.n_agents):
+                        req = comm.irecv(u_next[agent_id], source=agent_id+1, tag=3)
+                        requests.append(req)
+                    for req in requests:
+                        req.wait()
 
                     # Send u_next to each agent to train
-                    tasks = []
+                    u_next = np.array(u_next)
+                    requests = []
                     for agent_id in range(self.args.n_agents):
-                        data = json.loads(json.dumps({"agent_id": agent_id, "args": vars(self.args), "transitions": transitions, "u_next": u_next}, cls=NumpyEncoder))
-                        task = app.send_task("worker.train", queue='q' + str(agent_id), kwargs=data)
-                        tasks.append(task)
-                    u_next = []
-                    for task in tasks:
-                        result = task.get()
+                        req =comm.isend(u_next, dest=agent_id+1, tag=4)
+                        requests.append(req)
+                    for req in requests:
+                        req.wait()
                     
                 if time_step > 0 and time_step % self.args.evaluate_rate == 0:
                     returns.append(self.evaluate())
@@ -120,20 +119,26 @@ class Runner:
                 self.epsilon = max(0.05, self.epsilon - 0.0000005)
         # Worker
         else:   
-            requests = []
-            for agent_id in range(self.args.n_agents):
+            if rank in [1, 2, 3]:
+                agent_id = rank - 1
+
                 req = comm.irecv(s[agent_id], source=0, tag=0)
-                requests.append(req)
-            for req in requests:
                 req.wait()
-            
-            for agent_id in range(self.args.n_agents):
+                
                 u[agent_id] = self.agents[agent_id].select_action(s, self.args.noise_rate, self.args.epsilon)
                 req = comm.isend(u[agent_id], dest=0, tag=1)
                 
-            
+                req = comm.irecv(o_next[agent_id], source=0, tag=2)
+                req.wait()
 
-            
+                u_next[agent_id] = self.agents[agent_id].policy.actor_target_network(torch.tensor(o_next[agent_id], dtype=torch.float))
+                req = comm.isend(u_next[agent_id], dest=0, tag=3)
+
+                u_next = np.array(u_next)
+
+                req = comm.irecv(u_next, source=0, tag=4)
+                req.wait()
+                self.agents[agent_id].learn(transitions, torch.tensor(u_next, dtype=torch.float))
 
 
 
