@@ -1,4 +1,5 @@
 model/
+test_save_dir/
 
 .DS_Store
 

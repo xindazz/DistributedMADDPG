@@ -54,7 +54,7 @@ class MADDPG:
             target_param.data.copy_((1 - self.args.tau) * target_param.data + self.args.tau * param.data)
 
     # update the network
-    def train(self, transitions, other_agents):
+    def train(self, transitions, u_next):
         for key in transitions.keys():
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         r = transitions['r_%d' % self.agent_id]  # 训练时只需要自己的reward
@@ -65,19 +65,8 @@ class MADDPG:
             o_next.append(transitions['o_next_%d' % agent_id])
 
         # calculate the target Q value function
-        u_next = []
         with torch.no_grad():
-            # 得到下一个状态对应的动作
-            index = 0
-            for agent_id in range(self.args.n_agents):
-                if agent_id == self.agent_id:
-                    u_next.append(self.actor_target_network(o_next[agent_id]))
-                else:
-                    # 因为传入的other_agents要比总数少一个，可能中间某个agent是当前agent，不能遍历去选择动作
-                    u_next.append(other_agents[index].policy.actor_target_network(o_next[agent_id]))
-                    index += 1
             q_next = self.critic_target_network(o_next, u_next).detach()
-
             target_q = (r.unsqueeze(1) + self.args.gamma * q_next).detach()
 
         # the q loss
