@@ -35,12 +35,12 @@ class Runner:
     def _init_agents(self):
         agents = []
         for i in range(self.args.n_agents):
-            agent = Agent(i, self.args)
+            agent = Agent(i, self.args, False)
             agents.append(agent)
 
         adversaries = []
         for i in range(self.adversary_ids):
-            adversary = Agent(i, self.args)
+            adversary = Agent(i, self.args, True)
             adversaries.append(adversary)
         return agents, adversaries
 
@@ -62,9 +62,8 @@ class Runner:
                     action = agent.select_action(s[agent_id], self.noise, self.epsilon)
                     actions_agents.append(action)
                 
-            for i in range(self.args.n_agents, self.args.n_players):
                 for adversary_id, adversary in enumerate(self.adversaries):
-                    adversary_id += self.n_agents
+                    adversary_id += self.args.n_agents
                     action = adversary.select_action(s[adversary_id], self.noise, self.epsilon)
                     actions_adversaries.append(action)
 
@@ -79,17 +78,21 @@ class Runner:
 
             if self.buffer_agents.current_size >= self.args.batch_size:
                 transitions_agents = self.buffer_agents.sample(self.args.batch_size)
+                u_next = []
+                for agent_id in range(self.args.n_agents):
+                    o_next = torch.tensor(transitions_agents['o_next_%d' % agent_id], dtype=torch.float)
+                    u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
                 for agent in self.agents:
-                    other_agents = self.agents.copy()
-                    other_agents.remove(agent)
-                    agent.learn(transitions_agents, other_agents)
+                    agent.learn(transitions_agents, u_next)
             
             if self.buffer_adversaries.current_size >= self.args.batch_size:
                 transitions_adversaries = self.buffer_adversaries.sample(self.args.batch_size)
-                for adversary in self.adversaries:
-                    other_adversaries = self.adversaries.copy()
-                    other_adversaries.remove(adversary)
-                    agent.learn(transitions_adversaries, other_adversaries)
+                u_next = []
+                for adversary_id in range(self.args.num_adversaries):
+                    o_next = torch.tensor(transitions_adversaries['o_next_%d' % adversary_id], dtype=torch.float)
+                    u_next.append(self.adversaries[adversary_id].policy.actor_target_network(o_next))
+                for agent in self.adversaries:
+                    agent.learn(transitions_adversaries, u_next)
             
             if time_step > 0 and time_step % self.args.evaluate_rate == 0:
                 returns.append(self.evaluate())
@@ -123,7 +126,6 @@ class Runner:
                         action = agent.select_action(s[agent_id], 0, 0)
                         actions_agents.append(action)
                     
-                for i in range(self.args.n_agents, self.args.n_players):
                     for adversary_id, adversary in enumerate(self.adversaries):
                         adversary_id += self.n_agents
                         action = adversary.select_action(s[adversary_id], 0, 0)

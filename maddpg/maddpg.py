@@ -9,13 +9,18 @@ class MADDPG:
         self.agent_id = agent_id
         self.train_step = 0
 
+        if agent_id < args.n_agents:
+            self.agent_ids = range(args.n_agents)
+        else:
+            self.agent_ids = range(args.n_agents, args.n_players)
+
         # create the network
         self.actor_network = Actor(args, agent_id)
-        self.critic_network = Critic(args)
+        self.critic_network = Critic(args, agent_id)
 
         # build up the target network
         self.actor_target_network = Actor(args, agent_id)
-        self.critic_target_network = Critic(args)
+        self.critic_target_network = Critic(args, agent_id)
 
         # load the weights into the target networks
         self.actor_target_network.load_state_dict(self.actor_network.state_dict())
@@ -59,7 +64,7 @@ class MADDPG:
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         r = transitions['r_%d' % self.agent_id]  # 训练时只需要自己的reward
         o, u, o_next = [], [], []  # 用来装每个agent经验中的各项
-        for agent_id in range(self.args.n_agents):
+        for agent_id in self.agent_ids:
             o.append(transitions['o_%d' % agent_id])
             u.append(transitions['u_%d' % agent_id])
             o_next.append(transitions['o_next_%d' % agent_id])
@@ -75,7 +80,10 @@ class MADDPG:
 
         # the actor loss
         # 重新选择联合动作中当前agent的动作，其他agent的动作不变
-        u[self.agent_id] = self.actor_network(o[self.agent_id])
+        if self.agent_id < self.args.n_agents:
+            u[self.agent_id] = self.actor_network(o[self.agent_id])
+        else:
+            u[self.agent_id - self.args.n_agents] = self.actor_network(o[self.agent_id - self.args.n_agents])
         actor_loss = - self.critic_network(o, u).mean()
         # if self.agent_id == 0:
         #     print('critic_loss is {}, actor_loss is {}'.format(critic_loss, actor_loss))
