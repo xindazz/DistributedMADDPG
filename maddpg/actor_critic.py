@@ -23,10 +23,16 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, agent_id):
         super(Critic, self).__init__()
         self.max_action = args.high_action
-        self.fc1 = nn.Linear(sum(args.obs_shape) + sum(args.action_shape), 64)
+        # Agent
+        if agent_id < args.n_agents:
+            self.input_dim = sum(args.obs_shape[:args.n_agents]) + sum(args.action_shape[:args.n_agents])
+        # Adversary
+        else: 
+            self.input_dim = sum(args.obs_shape[args.n_agents:]) + sum(args.action_shape[args.n_agents:])
+        self.fc1 = nn.Linear(self.input_dim, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 64)
         self.q_out = nn.Linear(64, 1)
