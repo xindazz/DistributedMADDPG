@@ -4,6 +4,7 @@ from common.utils import make_env
 import numpy as np
 import random
 import torch
+import multiprocessing
 
 
 if __name__ == '__main__':
