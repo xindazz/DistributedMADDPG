@@ -21,7 +21,7 @@ class Runner:
         self.episode_limit = args.max_episode_len
         self.env = env
         self.agents = self._init_agents()
-        self.buffer = Buffer(args)
+        self.buffer = Buffer(args, False)
         self.save_path = self.args.save_dir + '/' + self.args.scenario_name
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
@@ -48,12 +48,16 @@ class Runner:
 
         # Master
         if rank == 0:
+            print("Im Master")
             returns = []
-            for time_step in tqdm(range(self.args.time_steps)):
+            # for time_step in tqdm(range(self.args.time_steps)):
+            for time_step in range(self.args.time_steps):
                 # reset the environment
                 if time_step % self.episode_limit == 0:
                     s = self.env.reset()
+                    print("Episode", time_step / self.episode_limit)
                 
+                print("Stuck")
                 # actions contains actions of all agents in the environment, including those on the opposing team
                 actions = []
                  # Get action from every agent
@@ -62,8 +66,11 @@ class Runner:
                     # task = app.send_task("worker.get_action", queue='q' + str(agent_id), kwargs={"agent_id": agent_id, "args": vars(self.args), "s": s[agent_id].tolist(), "evaluate": False}, cls=NumpyEncoder)
                     req = comm.Isend(s[agent_id], dest=agent_id+1, tag=0)
                     requests.append(req)
+                    print("Stuck")
                 for req in requests:
                     req.wait()
+
+                print("Stuck")
 
                 # requests = []
                 # for agent_id in range(self.args.n_agents):
@@ -88,6 +95,8 @@ class Runner:
                 s_next, r, done, info = self.env.step(actions)
                 self.buffer.store_episode(s[:self.args.n_agents], u, r[:self.args.n_agents], s_next[:self.args.n_agents])
                 s = s_next
+
+                print("Finished storing transition")
 
                 if self.buffer.current_size >= self.args.batch_size:
                     transitions = self.buffer.sample(self.args.batch_size)
@@ -134,6 +143,7 @@ class Runner:
                 self.epsilon = max(0.05, self.epsilon - 0.0000005)
         # Worker
         else:   
+            print("Im worker")
             agent_id = rank - 1
 
             req = comm.Irecv(s[agent_id] , source=0, tag=0)
@@ -143,6 +153,8 @@ class Runner:
                 action = self.agents[agent_id].select_action(s[agent_id], self.args.noise_rate, self.args.epsilon)
                 req = comm.Isend(action, dest=0, tag=1)
                 req.wait()
+
+            print("Finished acting")
             
             req = comm.Irecv(o_next[agent_id], source=0, tag=2)
             req.wait()

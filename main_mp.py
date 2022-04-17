@@ -8,6 +8,7 @@ import torch
 
 if __name__ == '__main__':
     # get the params
+    print("Started main")
     args = get_args()
     env, args = make_env(args)
     runner = Runner(args, env)
