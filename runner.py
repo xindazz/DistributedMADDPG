@@ -79,19 +79,21 @@ class Runner:
                 if self.buffer_agents.current_size >= self.args.batch_size:
                     transitions_agents = self.buffer_agents.sample(self.args.batch_size)
                     u_next = []
-                    for agent_id in range(self.args.n_agents):
-                        o_next = torch.tensor(transitions_agents['o_next_%d' % agent_id], dtype=torch.float)
-                        u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
+                    with torch.no_grad():
+                        for agent_id in range(self.args.n_agents):
+                            o_next = torch.tensor(transitions_agents['o_next_%d' % agent_id], dtype=torch.float)
+                            u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
                     for agent in self.agents:
                         agent.learn(transitions_agents, u_next)
                 
                 if self.buffer_adversaries.current_size >= self.args.batch_size:
                     transitions_adversaries = self.buffer_adversaries.sample(self.args.batch_size)
                     u_next = []
-                    for adversary_id, adversary in enumerate(self.adversaries):
-                        adversary_id += self.args.n_agents
-                        o_next = torch.tensor(transitions_adversaries['o_next_%d' % adversary_id], dtype=torch.float)
-                        u_next.append(adversary.policy.actor_target_network(o_next))
+                    with torch.no_grad():
+                        for adversary_id, adversary in enumerate(self.adversaries):
+                            adversary_id += self.args.n_agents
+                            o_next = torch.tensor(transitions_adversaries['o_next_%d' % adversary_id], dtype=torch.float)
+                            u_next.append(adversary.policy.actor_target_network(o_next))
                     for agent in self.adversaries:
                         agent.learn(transitions_adversaries, u_next)
             
@@ -113,9 +115,10 @@ class Runner:
                     transitions = self.buffer_agents.sample(self.args.batch_size)
                     # Parse transitions into o_next
                     u_next = []
-                    for agent_id in range(self.args.n_agents):
-                        o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float)
-                        u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
+                    with torch.no_grad():
+                        for agent_id in range(self.args.n_agents):
+                            o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float)
+                            u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
 
                     for agent in self.agents:
                         agent.learn(transitions, u_next)

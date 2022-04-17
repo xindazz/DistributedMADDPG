@@ -22,6 +22,12 @@ class MADDPG:
         self.actor_target_network = Actor(args, agent_id)
         self.critic_target_network = Critic(args, agent_id)
 
+        # For torch multiprocessing
+        self.actor_network.share_memory()
+        self.critic_network.share_memory()
+        self.actor_target_network.share_memory()
+        self.critic_target_network.share_memory()
+
         # load the weights into the target networks
         self.actor_target_network.load_state_dict(self.actor_network.state_dict())
         self.critic_target_network.load_state_dict(self.critic_network.state_dict())
@@ -49,6 +55,13 @@ class MADDPG:
                                                                           self.model_path + '/actor_params.pkl'))
             print('Agent {} successfully loaded critic_network: {}'.format(self.agent_id,
                                                                            self.model_path + '/critic_params.pkl'))
+        if os.path.exists(self.model_path + '/356_actor_params.pkl'):
+            self.actor_network.load_state_dict(torch.load(self.model_path + '/356_actor_params.pkl'))
+            self.critic_network.load_state_dict(torch.load(self.model_path + '/356_critic_params.pkl'))
+            print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
+                                                                          self.model_path + '/356_actor_params.pkl'))
+            print('Agent {} successfully loaded critic_network: {}'.format(self.agent_id,
+                                                                           self.model_path + '/356_critic_params.pkl'))
 
     # soft update
     def _soft_update_target_network(self):
