@@ -109,7 +109,8 @@ class MADDPG:
         critic_loss.backward()
         self.critic_optim.step()
 
-        self._soft_update_target_network()
+        if self.time_step > 0 and self.train_step % self.args.soft_update_rate == 0:
+            self._soft_update_target_network()
         if self.train_step > 0 and self.train_step % self.args.save_rate == 0:
             self.save_model(self.train_step)
         self.train_step += 1

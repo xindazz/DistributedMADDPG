@@ -13,10 +13,10 @@ def get_args():
     parser.add_argument("--scenario-name", type=str, default="simple_tag", help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=25, help="maximum episode length")
     parser.add_argument("--time-steps", type=int, default=1000000, help="number of time steps")
-    # 一个地图最多env.n个agents，用户可以定义min(env.n,num-adversaries)个敌人，剩下的是好的agent
     parser.add_argument("--num-adversaries", type=int, default=1, help="number of adversaries")
     parser.add_argument("--train-adversaries", type=bool, default=False, help="whether to train adversaries or perform random actions")
     parser.add_argument("--adversary-alg", type=str, default="MADDPG", help="adversary's algorithm")
+
     # Core training parameters
     parser.add_argument("--lr-actor", type=float, default=1e-4, help="learning rate of actor")
     parser.add_argument("--lr-critic", type=float, default=1e-3, help="learning rate of critic")
@@ -26,6 +26,8 @@ def get_args():
     parser.add_argument("--tau", type=float, default=0.01, help="parameter for updating the target network")
     parser.add_argument("--buffer-size", type=int, default=int(5e5), help="number of transitions can be stored in buffer")
     parser.add_argument("--batch-size", type=int, default=256, help="number of episodes to optimize at the same time")
+    parser.add_argument("--soft-update-rate", type=int, default=1000, help="number of timesteps to update target network")
+
     # Checkpointing
     parser.add_argument("--save-dir", type=str, default="./model", help="directory in which training state and model should be saved")
     parser.add_argument("--save-rate", type=int, default=2000, help="save model once every time this many episodes are completed")
