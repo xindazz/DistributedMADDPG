@@ -10,7 +10,6 @@ import pickle
 
 from common.utils import make_env
 from runner_new import Runner
-from master_new import master_app
 
 
 # run this code with "celery -A worker worker --loglevel=info --concurrency=1" on the 4 worker machines

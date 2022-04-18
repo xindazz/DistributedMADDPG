@@ -7,9 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-from worker_new import app, NumpyEncoder
-import celery
-
 
 class Runner:
     def __init__(self, args, env):

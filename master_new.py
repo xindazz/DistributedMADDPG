@@ -14,12 +14,6 @@ from maddpg.actor_critic import Actor, Critic
 from worker_new import app, NumpyEncoder
 
 
-master_app = celery.Celery(
-    "worker",
-    broker="amqp://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com",
-    backend="rpc://myguest:myguestpwd@RabbitMQLB-5103314cb3c8cc94.elb.us-east-2.amazonaws.com",
-)
-
 NUM_WORKERS = 4
 
 def init():
