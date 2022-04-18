@@ -26,6 +26,7 @@ class Critic(nn.Module):
     def __init__(self, args, agent_id):
         super(Critic, self).__init__()
         self.max_action = args.high_action
+        self.agent_id = agent_id
         # Adversary with DDPG
         if args.adversary_alg == "DDPG" and agent_id >= args.n_agents:
             self.input_dim = sum(args.obs_shape[args.n_agents:]) + sum(args.action_shape[args.n_agents:])
