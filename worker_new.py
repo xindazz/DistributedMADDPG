@@ -1,4 +1,3 @@
-from asyncio import runners
 import celery
 import numpy as np
 from copy import deepcopy
