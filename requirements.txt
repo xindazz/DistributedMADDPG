@@ -1,12 +1,9 @@
 cloudpickle==2.0.0
 cycler==0.11.0
-fonttools==4.32.0
-gym==0.23.1
 gym-notices==0.0.6
 importlib-metadata==4.11.3
 kiwisolver==1.4.2
 matplotlib==3.5.1
--e git+https://github.com/xindazz/multiagent_particle_env.git@b6c61a6b57cac7a3de45747222754d25325cc1e7#egg=multiagent
 numpy==1.22.3
 numpy-stl==2.16.3
 packaging==21.3

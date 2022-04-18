@@ -18,7 +18,7 @@ def get_args():
     parser.add_argument("--adversary-alg", type=str, default="MADDPG", help="adversary's algorithm")
 
     # GPU
-    parser.add_argument("--use-gpu", type=bool, default=True, help="use gpu or not")
+    parser.add_argument("--use-gpu", type=bool, default=False, help="use gpu or not")
 
     # Core training parameters
     parser.add_argument("--lr-actor", type=float, default=1e-4, help="learning rate of actor")

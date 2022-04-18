@@ -1,5 +1,6 @@
 import threading
 import numpy as np
+import torch
 
 
 class Buffer:
@@ -38,10 +39,8 @@ class Buffer:
         temp_buffer = {}
         idx = np.random.randint(0, self.current_size, batch_size)
         for key in self.buffer.keys():
-            if self.args.use_gpu and self.args.gpu:
-                temp_buffer[key] = self.buffer[key][idx].cuda()
-            else:
-                temp_buffer[key] = self.buffer[key][idx]
+            temp_buffer[key] = self.buffer[key][idx]
+            
         return temp_buffer
 
     def _get_storage_idx(self, inc=None):

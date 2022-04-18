@@ -70,7 +70,10 @@ class MADDPG:
     # update the network
     def train(self, transitions, u_next):
         for key in transitions.keys():
-            transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
+            if self.args.use_gpu and self.args.gpu:
+                transitions[key] = torch.tensor(transitions[key], dtype=torch.float32).cuda()
+            else:
+                transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         r = transitions['r_%d' % self.agent_id]
         o, u, o_next = [], [], []
         for agent_id in range(self.args.n_players):
