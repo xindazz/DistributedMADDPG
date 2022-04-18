@@ -87,9 +87,9 @@ def init():
             actor_network = Actor(args, agent_id)
             critic_network = Critic(args, agent_id)
 
-            for param, target_actor_param in actor_network.parameters(), actor[agent_id]:
+            for param, target_actor_param in zip(actor_network.parameters(), actor[agent_id]):
                 param.data.copy_(target_actor_param)
-            for param, target_critic_param in critic_network.parameters(), critic[agent_id]:
+            for param, target_critic_param in zip(critic_network.parameters(), critic[agent_id]):
                 param.data.copy_(target_critic_param)
 
             model_path = os.path.join(args.save_dir, args.scenario_name)
