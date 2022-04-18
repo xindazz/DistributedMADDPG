@@ -18,6 +18,7 @@ MAX_STEPS = 100000
 if __name__ == '__main__':
     # get the params
     args = get_args()
+    _, args = make_env(args)
     # env, args = make_env(args)
 
     # runners = []
@@ -25,10 +26,12 @@ if __name__ == '__main__':
     #     runner = Runner(args, i)
     #     runners.append(runner)
 
+    os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
     q = mp.Queue(maxsize=NUM_WORKERS)
     processes = []
     for i in range(NUM_WORKERS):
-        p = mp.Process(run, args=(q, args, i))
+        p = mp.Process(target=run, args=(q, args, i))
         p.start()
         processes.append(p)
 
@@ -49,11 +52,11 @@ if __name__ == '__main__':
 
             avg_rewards = np.array(avg_rewards)
             best_worker = np.argmin(avg_rewards)
-            print("Got best worker", best_worker, "with reward", np.min(avg_rewards))
+            print("----------------------Got best worker", best_worker, "with reward", np.min(avg_rewards))
 
             for agent_id in range(args.n_agents):
                 actor_network = Actor(args, agent_id)
-            critic_network = Critic(args, agent_id)
+                critic_network = Critic(args, agent_id)
 
             actor = []
             critic = []
@@ -79,7 +82,7 @@ if __name__ == '__main__':
                     param.data.copy_(target_critic_param)
 
                 for worker_id in range(NUM_WORKERS):
-                    model_path = args.save_dir + '/' + args.scenario_name + "/worker_" + str(args.worker_id) + "/"
+                    model_path = args.save_dir + '/' + args.scenario_name + "/worker_" + str(worker_id) + "/"
                     if not os.path.exists(model_path):
                         os.makedirs(model_path)
                     model_path = os.path.join(model_path, 'agent_%d' % agent_id)
@@ -87,7 +90,7 @@ if __name__ == '__main__':
                         os.makedirs(model_path)
                     torch.save(actor_network.state_dict(), model_path + '/temp_actor_target_params.pkl')
                     torch.save(critic_network.state_dict(),  model_path + '/temp_critic_target_params.pkl')
-            print("Successfully saved networks")
+            print("---------------------Successfully saved networks")
 
     for p in processes:
         p.join()

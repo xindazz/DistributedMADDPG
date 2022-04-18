@@ -362,7 +362,7 @@ def run(queue, args, id):
                 for param in agent.policy.critic_network.parameters():
                     critic_data.append(param.data.tolist())
 
-            q.put((worker_id, return_agent, actor_data, critic_data))
+            queue.put((worker_id, return_agent, actor_data, critic_data))
 
             s = list(env.reset().values())
             returns.append(return_agent)
