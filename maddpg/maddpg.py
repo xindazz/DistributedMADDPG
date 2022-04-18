@@ -74,6 +74,8 @@ class MADDPG:
 
     # update the network
     def train(self, transitions, u_next):
+        self.check_load_temp_target_model()
+
         for key in transitions.keys():
             if self.args.use_gpu and self.args.gpu:
                 transitions[key] = torch.tensor(transitions[key], dtype=torch.float32).cuda()
@@ -136,13 +138,17 @@ class MADDPG:
         torch.save(self.critic_network.state_dict(),  model_path + '/' + num + '_critic_params.pkl')
 
     def save_temp_model(self):
-        model_path = os.path.join(self.args.save_dir, self.args.scenario_name)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        model_path = os.path.join(model_path, 'agent_%d' % self.agent_id)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        torch.save(self.actor_network.state_dict(), model_path + '/temp_actor_params.pkl')
-        torch.save(self.critic_network.state_dict(),  model_path + '/temp_critic_params.pkl')
+        torch.save(self.actor_network.state_dict(), self.model_path + '/temp_actor_params.pkl')
+        torch.save(self.critic_network.state_dict(),  self.model_path + '/temp_critic_params.pkl')
 
-
+    def check_load_temp_target_model(self):
+        if os.path.exists(self.model_path + '/temp_actor_target_params.pkl'):
+            self.actor_target_network.load_state_dict(torch.load(self.model_path + '/temp_actor_target_params.pkl'))
+            self.critic_target_network.load_state_dict(torch.load(self.model_path + '/temp_critic_target_params.pkl'))
+            print('Agent {} successfully loaded {}'.format(self.agent_id, self.model_path + '/temp_actor_target_params.pkl'))
+            print('Agent {} successfully loaded {}'.format(self.agent_id, self.model_path + '/temp_critic_target_params.pkl'))
+            
+            # Remove so that won't load every time step
+            os.remove(self.model_path + '/temp_actor_target_params.pkl')
+            os.remove(self.model_path + '/temp_critic_target_params.pkl')
+            

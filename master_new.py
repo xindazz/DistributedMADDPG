@@ -48,7 +48,8 @@ def init():
         actors = []
         critics = []
         for task in tasks:
-            avg_reward, actor, critic = task.get()
+            result = json.loads(task.get())
+            avg_reward, actor, critic = result["avg_reward"], result["actor_data"], result["critic_data"]
             avg_rewards.append(avg_reward)
             actors.append(actor)
             critics.append(critic)

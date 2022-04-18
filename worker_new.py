@@ -102,10 +102,19 @@ def update_target_networks(**kwargs):
 
 
     for agent_id, agent in enumerate(runner.agents):
+        model_path = os.path.join(args.save_dir, args.scenario_name)
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        model_path = os.path.join(model_path, 'agent_%d' % agent_id)
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+
         for param, target_actor_param in agent.policy.actor_target_network.parameters(), actor[agent_id]:
             param.data.copy_(target_actor_param)
+        torch.save(agent.policy.actor_target_network.state_dict(), model_path + '/temp_actor_target_params.pkl')
         for param, target_critic_param in agent.policy.critic_target_network.parameters(), critic[agent_id]:
             param.data.copy_(target_critic_param)
+        torch.save(agent.policy.critic_target_network.state_dict(), model_path + '/temp_critic_target_params.pkl')
 
 
 
