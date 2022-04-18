@@ -1,5 +1,6 @@
 model/
 test_save_dir/
+mp_test_model/
 
 .DS_Store
 
