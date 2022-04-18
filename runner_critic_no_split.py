@@ -6,6 +6,7 @@ import torch
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 
 class Runner:
@@ -144,6 +145,7 @@ class Runner:
             for time_step in range(self.args.evaluate_episode_len):
                 if self.args.render:
                     self.env.render()
+                    time.sleep(0.05)
                 actions = []
                 with torch.no_grad():
                     if self.args.train_adversaries:

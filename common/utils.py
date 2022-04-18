@@ -71,7 +71,6 @@ def make_env(args):
     args.n_agents = num_adversaries
     args.obs_shape = [env.observation_spaces[agent_name].shape[0] for agent_name in env.agents]
     args.action_shape = [env.action_spaces[agent_name].shape[0] for agent_name in env.agents]
-    print(args.obs_shape, args.action_shape)
     args.high_action = 1
     args.low_action = 0
 
