@@ -155,6 +155,9 @@ def parse_args(myargs):
     max_episode_len = myargs["max_episode_len"]
     time_steps = myargs["time_steps"]
     num_adversaries = myargs["num_adversaries"]
+    train_adversaries = myargs["train_adversaries"]
+    adversary_alg = myargs["adversary_alg"]
+    use_gpu = myargs["use_gpu"]
     lr_actor = myargs["lr_actor"]
     lr_critic = myargs["lr_critic"]
     epsilon = myargs["epsilon"]
@@ -177,6 +180,9 @@ def parse_args(myargs):
         max_episode_len,
         time_steps,
         num_adversaries,
+        train_adversaries,
+        adversary_alg,
+        use_gpu,
         lr_actor,
         lr_critic,
         epsilon,
@@ -192,7 +198,7 @@ def parse_args(myargs):
         evaluate_episodes_len,
         evaluate,
         evaluate_rate,
-        render,
+        render
     )
 
     return args
