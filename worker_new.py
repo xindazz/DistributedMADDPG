@@ -52,22 +52,42 @@ def get_avg_reward(**kwargs):
 
     returns, returns_adv = runner.evaluate()
 
-    actor_networks, critic_networks = [], []
+    actor_data, critic_data = [], []
     for agent_id, agent in enumerate(runner.agents):
-        model_path = os.path.join(args.save_dir, args.scenario_name)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        model_path = os.path.join(model_path, 'agent_%d' % agent_id)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        actor_network_path = model_path + '/temp_actor_params.pkl'
-        critic_network_path = model_path + '/temp_critic_params.pkl'
-        torch.save(agent.policy.actor_network.state_dict(), actor_network_path)
-        torch.save(agent.policy.critic_network.state_dict(),  critic_network_path)
-        actor_networks.append(pickle.load(actor_network_path))
-        critic_networks.append(pickle.load(critic_network_path))
+        actor_data = []
+        for param in agent.policy.actor_network.parameters():
+            actor_data.append(param.data.tolist())
+        critic_data = []
+        for param in agent.policy.critic_network.parameters():
+            critic_data.append(param.data.tolist())
 
-    return actor_networks, critic_networks
+    return json.dumps({"avg_reward": returns, "actor_data": actor_data, "critic_data": critic_data})
+
+
+@app.task
+def update_target_networks(**kwargs):
+    best_actor_target = kwargs["best_actor_target"]
+    best_critic_target = kwargs["best_critic_target"]
+    
+    actor = []
+    critic = []
+    for agent_id, agent in enumerate(runner.agents):
+        target_actor_params = []
+        for actor_data in best_actor_target:
+            target_actor_params.append(torch.tensor(actor_data, dtype=torch.float32))
+        actor.append(target_actor_params)
+        
+        target_critic_params = []
+        for critic_data in best_critic_target:
+            target_critic_params.append(torch.tensor(critic_data, dtype=torch.float32))
+        critic.append(target_critic_params)
+
+
+    for agent_id, agent in enumerate(runner.agents):
+        for param, target_actor_param in agent.policy.actor_target_network.parameters(), actor[agent_id]:
+            param.data.copy_(target_actor_param)
+        for param, target_critic_param in agent.policy.critic_target_network.parameters(), critic[agent_id]:
+            param.data.copy_(target_critic_param)
 
 
 
