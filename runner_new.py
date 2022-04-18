@@ -9,11 +9,13 @@ import time
 
 
 class Runner:
-    def __init__(self, args, env):
+    def __init__(self, args, env, id):
         args.gpu = torch.cuda.is_available()
         print("Using GPU:", args.gpu)
 
         self.args = args
+        self.worker_id = id
+        self.args.worker_id = id
         self.noise = args.noise_rate
         self.epsilon = args.epsilon
         self.episode_limit = args.max_episode_len
@@ -21,7 +23,7 @@ class Runner:
         self.agents = self._init_agents()
         self.buffer = Buffer(args)
         
-        self.save_path = self.args.save_dir + '/' + self.args.scenario_name
+        self.save_path = self.args.save_dir + '/' + self.args.scenario_name + "/worker_" + str(id)
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
 
@@ -40,7 +42,7 @@ class Runner:
         return agents 
 
 
-    def run(self):
+    def run(self, q):
         returns = []
         returns_adv = []
         for time_step in tqdm(range(self.args.time_steps)):
@@ -119,6 +121,19 @@ class Runner:
 
             if time_step > 0 and time_step % self.args.evaluate_rate == 0:
                 return_agent, return_adv = self.evaluate()
+
+                # Send to central queue
+                actor_data, critic_data = [], []
+                for agent_id, agent in enumerate(self.agents):
+                    actor_data = []
+                    for param in agent.policy.actor_network.parameters():
+                        actor_data.append(param.data.tolist())
+                    critic_data = []
+                    for param in agent.policy.critic_network.parameters():
+                        critic_data.append(param.data.tolist())
+
+                q.put((self.worker_id, return_agent, actor_data, critic_data))
+
                 s = list(self.env.reset().values())
                 returns.append(return_agent)
                 plt.figure()
@@ -178,5 +193,7 @@ class Runner:
                 print('Returns is', rewards, " Adversary return is", rewards_adv)
             else:
                 print('Returns is', rewards)
-        
-        return sum(returns) / self.args.evaluate_episodes, sum(returns_adv) / self.args.evaluate_episodes
+
+            avg_returns, avg_returns_adv = sum(returns) / self.args.evaluate_episodes, sum(returns_adv) / self.args.evaluate_episodes
+
+        return avg_returns, avg_returns_adv

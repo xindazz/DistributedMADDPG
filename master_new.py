@@ -98,8 +98,8 @@ def init():
             model_path = os.path.join(model_path, 'agent_%d' % agent_id)
             if not os.path.exists(model_path):
                 os.makedirs(model_path)
-            torch.save(actor_network.state_dict(), model_path + '/'  + 'actor_params.pkl')
-            torch.save(critic_network.state_dict(),  model_path + '/' + 'critic_params.pkl')
+            torch.save(actor_network.state_dict(), model_path + '/temp_actor_target_params.pkl')
+            torch.save(critic_network.state_dict(),  model_path + '/temp_critic_target_params.pkl')
         print("Successfully saved networks")
                 
 
