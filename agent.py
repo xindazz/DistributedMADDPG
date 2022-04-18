@@ -12,7 +12,7 @@ class Agent:
 
     def select_action(self, o, noise_rate, epsilon):
         if np.random.uniform() < epsilon:
-            u = np.random.uniform(-self.args.high_action, self.args.high_action, self.args.action_shape[self.agent_id])
+            u = np.random.uniform(self.args.low_action, self.args.high_action, self.args.action_shape[self.agent_id]).astype(np.float32)
         else:
             inputs = torch.tensor(o, dtype=torch.float32).unsqueeze(0)
             pi = self.policy.actor_network(inputs).squeeze(0)
@@ -20,7 +20,7 @@ class Agent:
             u = pi.cpu().numpy()
             noise = noise_rate * self.args.high_action * np.random.randn(*u.shape)  # gaussian noise
             u += noise
-            u = np.clip(u, -self.args.high_action, self.args.high_action)
+            u = np.clip(u, self.args.low_action, self.args.high_action, dtype=np.float32)
         return u.copy()
 
     def learn(self, transitions, u_next):

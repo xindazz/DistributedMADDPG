@@ -12,10 +12,7 @@ class Buffer:
         self.current_size = 0
         # create the buffer to store info
         self.buffer = dict()
-        if is_adversary:
-            self.agent_ids = range(self.args.n_agents, self.args.n_players)
-        else:
-            self.agent_ids = range(self.args.n_agents)
+        self.agent_ids = range(self.args.n_players)
 
         for i in self.agent_ids:
             self.buffer["o_%d" % i] = np.empty([self.size, self.args.obs_shape[i]])
@@ -30,16 +27,11 @@ class Buffer:
     def store_episode(self, o, u, r, o_next):
         idxs = self._get_storage_idx(inc=1)  # 以transition的形式存，每次只存一条经验
         for i in self.agent_ids:
-            if self.is_adversary:
-                idx = i - self.args.n_agents
-            else:
-                idx = i
-                
             with self.lock:
-                self.buffer["o_%d" % i][idxs] = o[idx]
-                self.buffer["u_%d" % i][idxs] = u[idx]
-                self.buffer["r_%d" % i][idxs] = r[idx]
-                self.buffer["o_next_%d" % i][idxs] = o_next[idx]
+                self.buffer["o_%d" % i][idxs] = o[i]
+                self.buffer["u_%d" % i][idxs] = u[i]
+                self.buffer["r_%d" % i][idxs] = r[i]
+                self.buffer["o_next_%d" % i][idxs] = o_next[i]
 
     # sample the data from the replay buffer
     def sample(self, batch_size):
