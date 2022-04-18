@@ -1,5 +1,6 @@
 # from runner import Runner
 import numpy as np
+import matplotlib.pyplot as plt
 import random
 import torch
 import multiprocessing as mp
@@ -36,6 +37,7 @@ if __name__ == '__main__':
         processes.append(p)
 
     steps = 0
+    returns = []
     while True:
         if steps >= MAX_STEPS:
             break
@@ -51,7 +53,7 @@ if __name__ == '__main__':
                 critics[worker_id] = critic
 
             avg_rewards = np.array(avg_rewards)
-            best_worker = np.argmin(avg_rewards)
+            best_worker, best_reward = np.argmin(avg_rewards), np.min(avg_rewards)
             print("----------------------Got best worker", best_worker, "with reward", np.min(avg_rewards))
 
             for agent_id in range(args.n_agents):
@@ -91,6 +93,18 @@ if __name__ == '__main__':
                     torch.save(actor_network.state_dict(), model_path + '/temp_actor_target_params.pkl')
                     torch.save(critic_network.state_dict(),  model_path + '/temp_critic_target_params.pkl')
             print("---------------------Successfully saved networks")
+
+            returns.append(best_reward)
+            plt.figure()
+            plt.plot(range(len(returns)), returns, label="Agent")
+            plt.xlabel('episode * ' + str(args.evaluate_rate / args.max_episode_len))
+            plt.ylabel('average returns')
+            plt.legend()
+            overall_path = args.save_dir + '/' + args.scenario_name + '/overall/'
+            if not os.path.exists(overall_path):
+                os.makedirs(overall_path)
+            plt.savefig(overall_path + 'plt.png', format='png')
+            np.save(overall_path + 'returns.pkl', returns)
 
     for p in processes:
         p.join()
