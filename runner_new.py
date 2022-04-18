@@ -219,6 +219,7 @@ def run(queue, args, id):
     save_path = args.save_dir + '/' + args.scenario_name + "/worker_" + str(id)
     if not os.path.exists(save_path):
         os.makedirs(save_path)
+    args.save_path = save_path
 
     # initalize agents on local
     agents = []
@@ -369,7 +370,7 @@ def run(queue, args, id):
             plt.figure()
             plt.plot(range(len(returns)), returns, label="Agent")
             if args.train_adversaries:
-                returns_adv.append(return_adv)
+                returns_adv.append(return_agent_adv)
                 plt.plot(range(len(returns_adv)), returns_adv, label="Adversary")
                 np.save(save_path + '/returns_adv.pkl', returns_adv)
             plt.xlabel('episode * ' + str(args.evaluate_rate / episode_limit))

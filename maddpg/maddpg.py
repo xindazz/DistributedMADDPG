@@ -40,8 +40,8 @@ class MADDPG:
         if not os.path.exists(self.model_path + '/'):
             os.makedirs(self.model_path + '/')
         self.model_path = self.model_path + '/' + 'agent_%d' % agent_id
-        if not os.path.exists(self.model_path):
-            os.mkdir(self.model_path)
+        if not os.path.exists(self.model_path + '/'):
+            os.makedirs(self.model_path + '/')
 
         # 加载模型
         if os.path.exists(self.model_path + '/actor_params.pkl'):
