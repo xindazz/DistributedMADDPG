@@ -17,11 +17,12 @@ class MADDPG:
         self.actor_target_network = Actor(args, agent_id)
         self.critic_target_network = Critic(args, agent_id)
 
-        # For torch multiprocessing
-        self.actor_network.share_memory()
-        self.critic_network.share_memory()
-        self.actor_target_network.share_memory()
-        self.critic_target_network.share_memory()
+        if self.args.use_gpu and self.args.gpu:
+            fn = lambda x: x.cuda()
+            self.actor_network = fn(self.actor_network)
+            self.critic_network = fn(self.critic_network)
+            self.actor_target_network = fn(self.actor_target_network)
+            self.critic_target_network = fn(self.critic_target_network)
 
         # load the weights into the target networks
         self.actor_target_network.load_state_dict(self.actor_network.state_dict())
@@ -69,7 +70,10 @@ class MADDPG:
     # update the network
     def train(self, transitions, u_next):
         for key in transitions.keys():
-            transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
+            if self.args.use_gpu and self.args.gpu:
+                transitions[key] = torch.tensor(transitions[key], dtype=torch.float32).cuda()
+            else:
+                transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
         r = transitions['r_%d' % self.agent_id]
         o, u, o_next = [], [], []
         for agent_id in range(self.args.n_players):

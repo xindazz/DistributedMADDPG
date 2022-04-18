@@ -10,6 +10,9 @@ import time
 
 class Runner:
     def __init__(self, args, env):
+        args.gpu = torch.cuda.is_available()
+        print("Using GPU:", args.gpu)
+
         self.args = args
         self.noise = args.noise_rate
         self.epsilon = args.epsilon
@@ -38,6 +41,8 @@ class Runner:
         return agents
 
     def run(self):
+        # torch.set_num_threads(8)
+
         returns = []
         returns_adv = []
         for time_step in tqdm(range(self.args.time_steps)):
@@ -62,25 +67,18 @@ class Runner:
                 if self.buffer.current_size >= self.args.batch_size:
                     transitions = self.buffer.sample(self.args.batch_size)                        
 
-                    if self.args.adversary_alg == "MADDPG":
-                        u_next = []
-                        with torch.no_grad():
-                            for agent_id in range(self.args.n_players):
-                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
-                                u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
-
-                        for agent_id, agent in enumerate(self.agents):
-                            agent.learn(transitions, u_next)
-                    else:
-                        u_next = []
-                        with torch.no_grad():
-                            for agent_id in range(self.args.n_players):
-                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
-                                u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
-                        # Agents still train with everyone's states and actions
+                    u_next = []
+                    with torch.no_grad():
                         for agent_id in range(self.args.n_players):
-                            self.agents[agent_id].learn(transitions, u_next)
-                     
+                            if self.args.use_gpu and self.args.gpu:
+                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32).cuda()
+                            else:
+                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
+                            u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
+
+                    for agent_id, agent in enumerate(self.agents):
+                        agent.learn(transitions, u_next)
+                    
             # Random adversary
             else:
                 actions = []
@@ -101,7 +99,10 @@ class Runner:
                     u_next = []
                     with torch.no_grad():
                         for agent_id in range(self.args.n_agents):
-                            o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
+                            if self.args.use_gpu and self.args.gpu:
+                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32).cuda()
+                            else:
+                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
                             action_next = self.agents[agent_id].policy.actor_target_network(o_next)
                             u_next.append(action_next)
                         for i in range(self.args.n_agents, self.args.n_players):
@@ -109,7 +110,10 @@ class Runner:
                             for _ in range(self.args.batch_size):
                                 # action_next.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
                                 action_next.append([0, np.random.rand(), 0, np.random.rand(), 0])
-                            action_next = torch.tensor(action_next, dtype=torch.float32)
+                            if self.args.use_gpu and self.args.gpu:
+                                action_next = torch.tensor(action_next, dtype=torch.float32).cuda()
+                            else:
+                                action_next = torch.tensor(action_next, dtype=torch.float32)
                             u_next.append(action_next)
                     for agent in self.agents:
                         agent.learn(transitions, u_next)

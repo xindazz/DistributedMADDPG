@@ -1,5 +1,6 @@
 import threading
 import numpy as np
+import torch
 
 
 class Buffer:
@@ -39,6 +40,7 @@ class Buffer:
         idx = np.random.randint(0, self.current_size, batch_size)
         for key in self.buffer.keys():
             temp_buffer[key] = self.buffer[key][idx]
+            
         return temp_buffer
 
     def _get_storage_idx(self, inc=None):
