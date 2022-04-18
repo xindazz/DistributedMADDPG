@@ -26,12 +26,12 @@ class Critic(nn.Module):
     def __init__(self, args, agent_id):
         super(Critic, self).__init__()
         self.max_action = args.high_action
-        # Agent
-        if agent_id < args.n_agents:
-            self.input_dim = sum(args.obs_shape[:args.n_agents]) + sum(args.action_shape[:args.n_agents])
-        # Adversary
-        else: 
+        # Adversary with DDPG
+        if args.adversary_alg == "DDPG" and agent_id >= args.n_agents:
             self.input_dim = sum(args.obs_shape[args.n_agents:]) + sum(args.action_shape[args.n_agents:])
+        # Input dim is all states and actions
+        else: 
+            self.input_dim = sum(args.obs_shape) + sum(args.action_shape)
         self.fc1 = nn.Linear(self.input_dim, 64)
         self.fc2 = nn.Linear(64, 64)
         self.fc3 = nn.Linear(64, 64)

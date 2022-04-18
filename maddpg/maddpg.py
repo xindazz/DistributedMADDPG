@@ -62,12 +62,15 @@ class MADDPG:
     def train(self, transitions, u_next):
         for key in transitions.keys():
             transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
-        r = transitions['r_%d' % self.agent_id]  # 训练时只需要自己的reward
-        o, u, o_next = [], [], []  # 用来装每个agent经验中的各项
-        for agent_id in self.agent_ids:
+        r = transitions['r_%d' % self.agent_id]
+        o, u, o_next = [], [], []
+        for agent_id in range(self.args.n_players):
             o.append(transitions['o_%d' % agent_id])
             u.append(transitions['u_%d' % agent_id])
             o_next.append(transitions['o_next_%d' % agent_id])
+        
+        if agent_id >= self.args.n_agents and self.args.adversary_alg == "DDPG":
+            o, u, o_next, u_next = o[self.args.n_agents:], u[self.args.n_agents:], o_next[self.args.n_agents:], u_next[self.args.n_agents:]
 
         # calculate the target Q value function
         with torch.no_grad():
@@ -80,10 +83,13 @@ class MADDPG:
 
         # the actor loss
         # 重新选择联合动作中当前agent的动作，其他agent的动作不变
-        if self.agent_id < self.args.n_agents:
-            u[self.agent_id] = self.actor_network(o[self.agent_id])
-        else:
-            u[self.agent_id - self.args.n_agents] = self.actor_network(o[self.agent_id - self.args.n_agents])
+
+        # if self.agent_id < self.args.n_agents:
+        #     u[self.agent_id] = self.actor_network(o[self.agent_id])
+        # else:
+        #     u[self.agent_id - self.args.n_agents] = self.actor_network(o[self.agent_id - self.args.n_agents])
+
+        u[self.agent_id] = self.actor_network(o[self.agent_id])
         actor_loss = - self.critic_network(o, u).mean()
         # if self.agent_id == 0:
         #     print('critic_loss is {}, actor_loss is {}'.format(critic_loss, actor_loss))
