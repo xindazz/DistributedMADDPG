@@ -46,7 +46,16 @@ def init(**kwargs):
 
 @app.task
 def get_avg_reward(**kwargs):
-    global runner
+    print("Received task Get_avg_reward")
+    global worker_id, args, runner
+
+    worker_id = kwargs["id"]
+    myargs = kwargs["args"]
+    
+    if runner == None:
+        args = parse_args(myargs)
+        env, args = make_env(args)
+        runner = Runner(args, env)
 
     returns, returns_adv = runner.evaluate()
 
@@ -64,6 +73,17 @@ def get_avg_reward(**kwargs):
 
 @app.task
 def update_target_networks(**kwargs):
+    print("Received task Update_target_networks")
+    global worker_id, args, runner
+
+    worker_id = kwargs["id"]
+    myargs = kwargs["args"]
+    
+    if runner == None:
+        args = parse_args(myargs)
+        env, args = make_env(args)
+        runner = Runner(args, env)
+
     best_actor_target = kwargs["best_actor_target"]
     best_critic_target = kwargs["best_critic_target"]
     

@@ -15,6 +15,7 @@ from worker_new import app, NumpyEncoder
 
 
 NUM_WORKERS = 4
+MAX_STEPS = 10000
 
 def init():
     # initialize args
@@ -24,15 +25,25 @@ def init():
     # initialize workers
     tasks = []
     for i in range(NUM_WORKERS):
-        task = app.send_task("worker_new.init", queue="q" + str(i), kwargs={"id": i, "args": vars(args)}, cls=NumpyEncoder)
+        data = {"id": i, "args": vars(args)}
+        task = app.send_task("worker_new.init", queue="q" + str(i), kwargs=data)
         tasks.append(task)
+    print("Initialized workers")
     
+    
+    time_step = 0
     while True:
+        if time_step >= MAX_STEPS:
+            break
+
         time.sleep(60)
         tasks = []
         for i in range(NUM_WORKERS):
-            task = app.send_task("worker_new.get_avg_reward", queue="q" + str(i), kwargs={}, cls=NumpyEncoder)
+            data = {"id": i, "args": vars(args)}
+            task = app.send_task("worker_new.get_avg_reward", queue="q" + str(i), kwargs=data)
             tasks.append(task)
+        print("Sent to all workers task Get_avg_reward")
+
         avg_rewards = []
         actors = []
         critics = []
@@ -41,17 +52,17 @@ def init():
             avg_rewards.append(avg_reward)
             actors.append(actor)
             critics.append(critic)
+        print("Got back result from all workers for task Get_avg_reward")
 
         avg_rewards = np.array(avg_rewards)
         best_worker = np.argmin(avg_rewards)
 
         tasks = []
         for i in range(NUM_WORKERS):
-            data = {"best_actor_target": actors[best_worker], "best_critic_target": critics[best_worker]}
+            data = {"id": i, "args": vars(args), "best_actor_target": actors[best_worker], "best_critic_target": critics[best_worker]}
             task = app.send_task("worker_new.update_target_networks", queue="q" + str(i), kwargs=data, cls=NumpyEncoder)
             tasks.append(task)
-
-
+        print("Sent to all workers task Update_target_networks")
 
         for agent_id in range(args.n_agents):
             actor_network = Actor(args, agent_id)
@@ -88,6 +99,7 @@ def init():
                 os.makedirs(model_path)
             torch.save(actor_network.state_dict(), model_path + '/'  + 'actor_params.pkl')
             torch.save(critic_network.state_dict(),  model_path + '/' + 'critic_params.pkl')
+        print("Successfully saved networks")
                 
 
 init()
