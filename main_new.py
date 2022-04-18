@@ -8,7 +8,7 @@ import os
 from common.arguments import get_args
 from common.utils import make_env
 from maddpg.actor_critic import Actor, Critic
-from runner_new import Runner
+from runner_new import Runner, run
 
 
 
@@ -18,17 +18,17 @@ MAX_STEPS = 100000
 if __name__ == '__main__':
     # get the params
     args = get_args()
-    env, args = make_env(args)
+    # env, args = make_env(args)
 
-    runners = []
-    for i in range(NUM_WORKERS):
-        runner = Runner(args, env, i)
-        runners.append(runner)
+    # runners = []
+    # for i in range(NUM_WORKERS):
+    #     runner = Runner(args, i)
+    #     runners.append(runner)
 
     q = mp.Queue(maxsize=NUM_WORKERS)
     processes = []
     for i in range(NUM_WORKERS):
-        p = mp.Process(target=runners[i].run, args=(q,))
+        p = mp.Process(run, args=(q, args, i))
         p.start()
         processes.append(p)
 

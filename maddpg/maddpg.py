@@ -34,11 +34,11 @@ class MADDPG:
 
         # create the dict for store the model
         if not os.path.exists(self.args.save_dir):
-            os.mkdir(self.args.save_dir)
+            os.makedirs(self.args.save_dir)
         # path to save the model
         self.model_path = self.args.save_dir + '/' + self.args.scenario_name + "/worker_" + str(self.args.worker_id)
-        if not os.path.exists(self.model_path):
-            os.mkdir(self.model_path)
+        if not os.path.exists(self.model_path + '/'):
+            os.makedirs(self.model_path + '/')
         self.model_path = self.model_path + '/' + 'agent_%d' % agent_id
         if not os.path.exists(self.model_path):
             os.mkdir(self.model_path)
