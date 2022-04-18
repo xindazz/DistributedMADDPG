@@ -9,11 +9,6 @@ class MADDPG:
         self.agent_id = agent_id
         self.train_step = 0
 
-        if agent_id < args.n_agents:
-            self.agent_ids = range(args.n_agents)
-        else:
-            self.agent_ids = range(args.n_agents, args.n_players)
-
         # create the network
         self.actor_network = Actor(args, agent_id)
         self.critic_network = Critic(args, agent_id)
@@ -68,7 +63,9 @@ class MADDPG:
             o.append(transitions['o_%d' % agent_id])
             u.append(transitions['u_%d' % agent_id])
             o_next.append(transitions['o_next_%d' % agent_id])
+           
         
+        # If is adversary and algorithm is DDPG, state and action only of adversary
         if self.agent_id >= self.args.n_agents and self.args.adversary_alg == "DDPG":
             o, u, o_next, u_next = o[self.args.n_agents:], u[self.args.n_agents:], o_next[self.args.n_agents:], u_next[self.args.n_agents:]
 

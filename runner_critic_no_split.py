@@ -1,3 +1,4 @@
+from rsa import decrypt
 from tqdm import tqdm
 from agent import Agent
 from common.replay_buffer import Buffer
@@ -38,10 +39,11 @@ class Runner:
 
     def run(self):
         returns = []
+        returns_adv = []
         for time_step in tqdm(range(self.args.time_steps)):
             # reset the environment
             if time_step % self.episode_limit == 0:
-                s = self.env.reset()
+                s = list(self.env.reset().values())
 
             # train adversaries
             if self.args.train_adversaries:
@@ -51,7 +53,9 @@ class Runner:
                     for agent_id, agent in enumerate(self.agents):
                         action = agent.select_action(s[agent_id], self.noise, self.epsilon)
                         actions.append(action)
-                s_next, r, done, info = self.env.step(actions)
+                actions_dict = {agent_name: actions[agent_id] for agent_id, agent_name in enumerate(self.env.agents)}
+                s_next, r, done, info = self.env.step(actions_dict)
+                s_next, r = list(s_next.values()), list(r.values())
                 self.buffer.store_episode(s, actions, r, s_next)
                 s = s_next
 
@@ -62,7 +66,7 @@ class Runner:
                         u_next = []
                         with torch.no_grad():
                             for agent_id in range(self.args.n_players):
-                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float)
+                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
                                 u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
 
                         for agent_id, agent in enumerate(self.agents):
@@ -71,64 +75,72 @@ class Runner:
                         u_next = []
                         with torch.no_grad():
                             for agent_id in range(self.args.n_players):
-                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float)
+                                o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
                                 u_next.append(self.agents[agent_id].policy.actor_target_network(o_next))
                         # Agents still train with everyone's states and actions
                         for agent_id in range(self.args.n_players):
                             self.agents[agent_id].learn(transitions, u_next)
                      
-                
-                
             # Random adversary
             else:
-                u = []
                 actions = []
                 with torch.no_grad():
                     for agent_id, agent in enumerate(self.agents):
                         action = agent.select_action(s[agent_id], self.noise, self.epsilon)
-                        u.append(action)
                         actions.append(action)
                 for i in range(self.args.n_agents, self.args.n_players):
-                    actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-                s_next, r, done, info = self.env.step(actions)
-                self.buffer.store_episode(s[:self.args.n_agents], u, r[:self.args.n_agents], s_next[:self.args.n_agents])
+                    # actions.append(np.array([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0]))
+                    actions.append(np.array([0, np.random.rand(), 0, np.random.rand(), 0], dtype=np.float32))
+                actions_dict = {agent_name: actions[agent_id] for agent_id, agent_name in enumerate(self.env.agents)}
+                s_next, r, done, info = self.env.step(actions_dict)
+                s_next, r = list(s_next.values()), list(r.values())
+                self.buffer.store_episode(s, actions, r, s_next)
                 s = s_next
                 if self.buffer.current_size >= self.args.batch_size:
                     transitions = self.buffer.sample(self.args.batch_size)
-                    for key in transitions.keys():
-                        transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
-                    o, u, o_next = [], [], []
-                    for agent_id in range(self.args.n_agents):
-                        o.append(transitions['o_%d' % agent_id])
-                        u.append(transitions['u_%d' % agent_id])
-                        o_next.append(transitions['o_next_%d' % agent_id])
-                    # Parse transitions into o_next
                     u_next = []
                     with torch.no_grad():
                         for agent_id in range(self.args.n_agents):
-                            u_next.append(self.agents[agent_id].policy.actor_target_network(o_next[agent_id]))
-
+                            o_next = torch.tensor(transitions['o_next_%d' % agent_id], dtype=torch.float32)
+                            action_next = self.agents[agent_id].policy.actor_target_network(o_next)
+                            u_next.append(action_next)
+                        for i in range(self.args.n_agents, self.args.n_players):
+                            action_next = []
+                            for _ in range(self.args.batch_size):
+                                # action_next.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
+                                action_next.append([0, np.random.rand(), 0, np.random.rand(), 0])
+                            action_next = torch.tensor(action_next, dtype=torch.float32)
+                            u_next.append(action_next)
                     for agent in self.agents:
                         agent.learn(transitions, u_next)
 
             if time_step > 0 and time_step % self.args.evaluate_rate == 0:
-                returns.append(self.evaluate())
+                return_agent, return_adv = self.evaluate()
+                s = list(self.env.reset().values())
+                returns.append(return_agent)
                 plt.figure()
-                plt.plot(range(len(returns)), returns)
+                plt.plot(range(len(returns)), returns, label="Agent")
+                if self.args.train_adversaries:
+                    returns_adv.append(return_adv)
+                    plt.plot(range(len(returns_adv)), returns_adv, label="Adversary")
                 plt.xlabel('episode * ' + str(self.args.evaluate_rate / self.episode_limit))
                 plt.ylabel('average returns')
+                plt.legend()
                 plt.savefig(self.save_path + '/plt.png', format='png')
                 np.save(self.save_path + '/returns.pkl', returns)
+
             self.noise = max(0.05, self.noise - 0.0000005)
             self.epsilon = max(0.05, self.epsilon - 0.0000005)
 
 
     def evaluate(self):
         returns = []
+        returns_adv = []
         for episode in range(self.args.evaluate_episodes):
             # reset the environment
-            s = self.env.reset()
+            s = list(self.env.reset().values())
             rewards = 0
+            rewards_adv = 0
             for time_step in range(self.args.evaluate_episode_len):
                 if self.args.render:
                     self.env.render()
@@ -143,11 +155,21 @@ class Runner:
                             action = agent.select_action(s[agent_id], 0, 0)
                             actions.append(action)
                         for i in range(self.args.n_agents, self.args.n_players):
-                            actions.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-
-                s_next, r, done, info = self.env.step(actions)
-                rewards += r[0]
+                            actions.append(np.array([0, np.random.rand(), 0, np.random.rand(), 0], dtype=np.float32))
+                actions_dict = {agent_name: actions[agent_id] for agent_id, agent_name in enumerate(self.env.agents)}
+                s_next, r, done, info = self.env.step(actions_dict)
+                s_next, r = list(s_next.values()), list(r.values())
+                for i in range(self.args.n_agents):
+                    rewards += r[i]
+                if self.args.train_adversaries:
+                    for i in range(self.args.n_agents, self.args.n_players):
+                        rewards_adv += r[i]
+    
                 s = s_next
             returns.append(rewards)
-            print('Returns is', rewards)
-        return sum(returns) / self.args.evaluate_episodes
+            if self.args.train_adversaries:
+                returns_adv.append(rewards_adv)
+                print('Returns is', rewards, " Adversary return is", rewards_adv)
+            else:
+                print('Returns is', rewards)
+        return sum(returns) / self.args.evaluate_episodes, sum(returns_adv) / self.args.evaluate_episodes
