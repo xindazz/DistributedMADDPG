@@ -105,6 +105,9 @@ class Arguments:
         max_episode_len,
         time_steps,
         num_adversaries,
+        train_adversaries,
+        adversary_alg,
+        use_gpu,
         lr_actor,
         lr_critic,
         epsilon,
@@ -126,6 +129,9 @@ class Arguments:
         self.max_episode_len = max_episode_len
         self.time_steps = time_steps
         self.num_adversaries = num_adversaries
+        self.train_adversaries = train_adversaries
+        self.adversary_alg = adversary_alg
+        self.use_gpu = use_gpu
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.epsilon = epsilon

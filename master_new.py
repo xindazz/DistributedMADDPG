@@ -24,14 +24,14 @@ def init():
     # initialize workers
     tasks = []
     for i in range(NUM_WORKERS):
-        task = app.send_task("worker.init", queue="q" + str(i), kwargs={"id": i, "args": vars(args)}, cls=NumpyEncoder)
+        task = app.send_task("worker_new.init", queue="q" + str(i), kwargs={"id": i, "args": vars(args)}, cls=NumpyEncoder)
         tasks.append(task)
     
     while True:
         time.sleep(60)
         tasks = []
         for i in range(NUM_WORKERS):
-            task = app.send_task("worker.get_avg_reward", queue="q" + str(i), kwargs={}, cls=NumpyEncoder)
+            task = app.send_task("worker_new.get_avg_reward", queue="q" + str(i), kwargs={}, cls=NumpyEncoder)
             tasks.append(task)
         avg_rewards = []
         actors = []
@@ -48,7 +48,7 @@ def init():
         tasks = []
         for i in range(NUM_WORKERS):
             data = {"best_actor_target": actors[best_worker], "best_critic_target": critics[best_worker]}
-            task = app.send_task("worker.update_target_networks", queue="q" + str(i), kwargs=data, cls=NumpyEncoder)
+            task = app.send_task("worker_new.update_target_networks", queue="q" + str(i), kwargs=data, cls=NumpyEncoder)
             tasks.append(task)
 
 
@@ -89,3 +89,5 @@ def init():
             torch.save(actor_network.state_dict(), model_path + '/'  + 'actor_params.pkl')
             torch.save(critic_network.state_dict(),  model_path + '/' + 'critic_params.pkl')
                 
+
+init()
