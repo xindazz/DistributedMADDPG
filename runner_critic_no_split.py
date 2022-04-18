@@ -123,12 +123,13 @@ class Runner:
                 if self.args.train_adversaries:
                     returns_adv.append(return_adv)
                     plt.plot(range(len(returns_adv)), returns_adv, label="Adversary")
+                    np.save(self.save_path + '/returns_adv.pkl', returns_adv)
                 plt.xlabel('episode * ' + str(self.args.evaluate_rate / self.episode_limit))
                 plt.ylabel('average returns')
                 plt.legend()
                 plt.savefig(self.save_path + '/plt.png', format='png')
                 np.save(self.save_path + '/returns.pkl', returns)
-                np.save(self.save_path + '/returns_adv.pkl', returns_adv)
+                
 
             self.noise = max(0.05, self.noise - 0.0000005)
             self.epsilon = max(0.05, self.epsilon - 0.0000005)
