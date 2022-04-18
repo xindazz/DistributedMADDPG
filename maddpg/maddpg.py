@@ -17,11 +17,12 @@ class MADDPG:
         self.actor_target_network = Actor(args, agent_id)
         self.critic_target_network = Critic(args, agent_id)
 
-        # For torch multiprocessing
-        self.actor_network.share_memory()
-        self.critic_network.share_memory()
-        self.actor_target_network.share_memory()
-        self.critic_target_network.share_memory()
+        if self.args.use_gpu and self.args.gpu:
+            fn = lambda x: x.cuda()
+            self.actor_network = fn(self.actor_network)
+            self.critic_network = fn(self.critic_network)
+            self.actor_target_network = fn(self.actor_target_network)
+            self.critic_target_network = fn(self.critic_target_network)
 
         # load the weights into the target networks
         self.actor_target_network.load_state_dict(self.actor_network.state_dict())

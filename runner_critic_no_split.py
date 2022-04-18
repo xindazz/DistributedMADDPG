@@ -10,6 +10,9 @@ import time
 
 class Runner:
     def __init__(self, args, env):
+        args.gpu = torch.cuda.is_available()
+        print("Using GPU:", args.gpu)
+
         self.args = args
         self.noise = args.noise_rate
         self.epsilon = args.epsilon
@@ -38,6 +41,8 @@ class Runner:
         return agents
 
     def run(self):
+        # torch.set_num_threads(8)
+
         returns = []
         returns_adv = []
         for time_step in tqdm(range(self.args.time_steps)):
