@@ -4,7 +4,9 @@ from maddpg.actor_critic import Actor, Critic
 
 
 class MADDPG:
-    def __init__(self, args, agent_id):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
+    def __init__(
+        self, args, agent_id
+    ):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
         self.args = args
         self.agent_id = agent_id
         self.train_step = 0
@@ -29,69 +31,112 @@ class MADDPG:
         self.critic_target_network.load_state_dict(self.critic_network.state_dict())
 
         # create the optimizer
-        self.actor_optim = torch.optim.Adam(self.actor_network.parameters(), lr=self.args.lr_actor)
-        self.critic_optim = torch.optim.Adam(self.critic_network.parameters(), lr=self.args.lr_critic)
+        self.actor_optim = torch.optim.Adam(
+            self.actor_network.parameters(), lr=self.args.lr_actor
+        )
+        self.critic_optim = torch.optim.Adam(
+            self.critic_network.parameters(), lr=self.args.lr_critic
+        )
 
         # create the dict for store the model
         if not os.path.exists(self.args.save_dir):
             os.makedirs(self.args.save_dir)
         # path to save the model
-        self.model_path = self.args.save_dir + '/' + self.args.scenario_name + "/worker_" + str(self.args.worker_id)
-        if not os.path.exists(self.model_path + '/'):
-            os.makedirs(self.model_path + '/')
-        self.model_path = self.model_path + '/' + 'agent_%d' % agent_id
-        if not os.path.exists(self.model_path + '/'):
-            os.makedirs(self.model_path + '/')
+        self.model_path = (
+            self.args.save_dir
+            + "/"
+            + self.args.scenario_name
+            + "/worker_"
+            + str(self.args.worker_id)
+        )
+        if not os.path.exists(self.model_path + "/"):
+            os.makedirs(self.model_path + "/")
+        self.model_path = self.model_path + "/" + "agent_%d" % agent_id
+        if not os.path.exists(self.model_path + "/"):
+            os.makedirs(self.model_path + "/")
 
         # 加载模型
-        if os.path.exists(self.model_path + '/actor_params.pkl'):
-            self.actor_network.load_state_dict(torch.load(self.model_path + '/actor_params.pkl'))
-            self.critic_network.load_state_dict(torch.load(self.model_path + '/critic_params.pkl'))
-            print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
-                                                                          self.model_path + '/actor_params.pkl'))
-            print('Agent {} successfully loaded critic_network: {}'.format(self.agent_id,
-                                                                           self.model_path + '/critic_params.pkl'))
+        if os.path.exists(self.model_path + "/actor_params.pkl"):
+            self.actor_network.load_state_dict(
+                torch.load(self.model_path + "/actor_params.pkl")
+            )
+            self.critic_network.load_state_dict(
+                torch.load(self.model_path + "/critic_params.pkl")
+            )
+            print(
+                "Agent {} successfully loaded actor_network: {}".format(
+                    self.agent_id, self.model_path + "/actor_params.pkl"
+                )
+            )
+            print(
+                "Agent {} successfully loaded critic_network: {}".format(
+                    self.agent_id, self.model_path + "/critic_params.pkl"
+                )
+            )
 
-        elif os.path.exists(self.model_path + '/temp_actor_params.pkl'):
-            self.actor_network.load_state_dict(torch.load(self.model_path + '/temp_actor_params.pkl'))
-            self.critic_network.load_state_dict(torch.load(self.model_path + '/temp_critic_params.pkl'))
-            print('Agent {} successfully loaded actor_network: {}'.format(self.agent_id,
-                                                                          self.model_path + '/temp_actor_params.pkl'))
-            print('Agent {} successfully loaded critic_network: {}'.format(self.agent_id,
-                                                                           self.model_path + '/temp_critic_params.pkl'))
-            
+        elif os.path.exists(self.model_path + "/temp_actor_params.pkl"):
+            self.actor_network.load_state_dict(
+                torch.load(self.model_path + "/temp_actor_params.pkl")
+            )
+            self.critic_network.load_state_dict(
+                torch.load(self.model_path + "/temp_critic_params.pkl")
+            )
+            print(
+                "Agent {} successfully loaded actor_network: {}".format(
+                    self.agent_id, self.model_path + "/temp_actor_params.pkl"
+                )
+            )
+            print(
+                "Agent {} successfully loaded critic_network: {}".format(
+                    self.agent_id, self.model_path + "/temp_critic_params.pkl"
+                )
+            )
 
     # soft update
     def _soft_update_target_network(self):
         # for param in self.actor_network.parameters():
         #     print("Actor params: ", param.data.shape)
         # print("Done")
-        for target_param, param in zip(self.actor_target_network.parameters(), self.actor_network.parameters()):
-            target_param.data.copy_((1 - self.args.tau) * target_param.data + self.args.tau * param.data)
+        for target_param, param in zip(
+            self.actor_target_network.parameters(), self.actor_network.parameters()
+        ):
+            target_param.data.copy_(
+                (1 - self.args.tau) * target_param.data + self.args.tau * param.data
+            )
 
-        for target_param, param in zip(self.critic_target_network.parameters(), self.critic_network.parameters()):
-            target_param.data.copy_((1 - self.args.tau) * target_param.data + self.args.tau * param.data)
+        for target_param, param in zip(
+            self.critic_target_network.parameters(), self.critic_network.parameters()
+        ):
+            target_param.data.copy_(
+                (1 - self.args.tau) * target_param.data + self.args.tau * param.data
+            )
 
     # update the network
     def train(self, transitions, u_next):
-        self.check_load_temp_target_model()
+        # self.check_load_temp_target_model()
 
         for key in transitions.keys():
             if self.args.use_gpu and self.args.gpu:
-                transitions[key] = torch.tensor(transitions[key], dtype=torch.float32).cuda()
+                transitions[key] = torch.tensor(
+                    transitions[key], dtype=torch.float32
+                ).cuda()
             else:
                 transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
-        r = transitions['r_%d' % self.agent_id]
+        r = transitions["r_%d" % self.agent_id]
         o, u, o_next = [], [], []
         for agent_id in range(self.args.n_players):
-            o.append(transitions['o_%d' % agent_id])
-            u.append(transitions['u_%d' % agent_id])
-            o_next.append(transitions['o_next_%d' % agent_id])
-           
-        
+            o.append(transitions["o_%d" % agent_id])
+            u.append(transitions["u_%d" % agent_id])
+            o_next.append(transitions["o_next_%d" % agent_id])
+
         # If is adversary and algorithm is DDPG, state and action only of adversary
         if self.agent_id >= self.args.n_agents and self.args.adversary_alg == "DDPG":
-            o, u, o_next, u_next = o[self.args.n_agents:], u[self.args.n_agents:], o_next[self.args.n_agents:], u_next[self.args.n_agents:]
+            o, u, o_next, u_next = (
+                o[self.args.n_agents :],
+                u[self.args.n_agents :],
+                o_next[self.args.n_agents :],
+                u_next[self.args.n_agents :],
+            )
 
         # calculate the target Q value function
         with torch.no_grad():
@@ -106,10 +151,12 @@ class MADDPG:
         # 重新选择联合动作中当前agent的动作，其他agent的动作不变
 
         if self.agent_id >= self.args.n_agents and self.args.adversary_alg == "DDPG":
-            u[self.agent_id - self.args.n_agents] = self.actor_network(o[self.agent_id - self.args.n_agents])
+            u[self.agent_id - self.args.n_agents] = self.actor_network(
+                o[self.agent_id - self.args.n_agents]
+            )
         else:
             u[self.agent_id] = self.actor_network(o[self.agent_id])
-        actor_loss = - self.critic_network(o, u).mean()
+        actor_loss = -self.critic_network(o, u).mean()
         # if self.agent_id == 0:
         #     print('critic_loss is {}, actor_loss is {}'.format(critic_loss, actor_loss))
         # update the network
@@ -132,24 +179,46 @@ class MADDPG:
         model_path = os.path.join(self.args.save_dir, self.args.scenario_name)
         if not os.path.exists(model_path):
             os.makedirs(model_path)
-        model_path = os.path.join(model_path, 'agent_%d' % self.agent_id)
+        model_path = os.path.join(model_path, "agent_%d" % self.agent_id)
         if not os.path.exists(model_path):
             os.makedirs(model_path)
-        torch.save(self.actor_network.state_dict(), model_path + '/' + num + '_actor_params.pkl')
-        torch.save(self.critic_network.state_dict(),  model_path + '/' + num + '_critic_params.pkl')
+        torch.save(
+            self.actor_network.state_dict(),
+            model_path + "/" + num + "_actor_params.pkl",
+        )
+        torch.save(
+            self.critic_network.state_dict(),
+            model_path + "/" + num + "_critic_params.pkl",
+        )
 
     def save_temp_model(self):
-        torch.save(self.actor_network.state_dict(), self.model_path + '/temp_actor_params.pkl')
-        torch.save(self.critic_network.state_dict(),  self.model_path + '/temp_critic_params.pkl')
+        torch.save(
+            self.actor_network.state_dict(), self.model_path + "/temp_actor_params.pkl"
+        )
+        torch.save(
+            self.critic_network.state_dict(),
+            self.model_path + "/temp_critic_params.pkl",
+        )
 
     def check_load_temp_target_model(self):
-        if os.path.exists(self.model_path + '/temp_actor_target_params.pkl'):
-            self.actor_target_network.load_state_dict(torch.load(self.model_path + '/temp_actor_target_params.pkl'))
-            self.critic_target_network.load_state_dict(torch.load(self.model_path + '/temp_critic_target_params.pkl'))
-            print('Agent {} successfully loaded {}'.format(self.agent_id, self.model_path + '/temp_actor_target_params.pkl'))
-            print('Agent {} successfully loaded {}'.format(self.agent_id, self.model_path + '/temp_critic_target_params.pkl'))
-            
+        if os.path.exists(self.model_path + "/temp_actor_target_params.pkl"):
+            self.actor_target_network.load_state_dict(
+                torch.load(self.model_path + "/temp_actor_target_params.pkl")
+            )
+            self.critic_target_network.load_state_dict(
+                torch.load(self.model_path + "/temp_critic_target_params.pkl")
+            )
+            print(
+                "Agent {} successfully loaded {}".format(
+                    self.agent_id, self.model_path + "/temp_actor_target_params.pkl"
+                )
+            )
+            print(
+                "Agent {} successfully loaded {}".format(
+                    self.agent_id, self.model_path + "/temp_critic_target_params.pkl"
+                )
+            )
+
             # Remove so that won't load every time step
-            os.remove(self.model_path + '/temp_actor_target_params.pkl')
-            os.remove(self.model_path + '/temp_critic_target_params.pkl')
-            
+            os.remove(self.model_path + "/temp_actor_target_params.pkl")
+            os.remove(self.model_path + "/temp_critic_target_params.pkl")
