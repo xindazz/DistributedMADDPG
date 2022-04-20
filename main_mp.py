@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 import multiprocessing as mp
 import os
+from tqdm import tqdm
 
 from common.arguments import get_args
 from common.utils import make_env
@@ -58,7 +59,7 @@ if __name__ == "__main__":
 
     num_epochs = int(args.time_steps / args.evaluate_rate)
     # determine how many epochs to train
-    for _ in range(num_epochs):
+    for _ in tqdm(range(num_epochs)):
         params = ("train",)
         # request worker to start training
         for i in range(NUM_WORKERS):

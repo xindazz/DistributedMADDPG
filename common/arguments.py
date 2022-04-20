@@ -20,6 +20,9 @@ def get_args():
     # GPU
     parser.add_argument("--use-gpu", type=bool, default=False, help="use gpu or not")
 
+    # MP
+    parser.add_argument("--use-mp", type=bool, default=True, help="do multiprocessing or not")
+
     # Core training parameters
     parser.add_argument("--lr-actor", type=float, default=1e-4, help="learning rate of actor")
     parser.add_argument("--lr-critic", type=float, default=1e-3, help="learning rate of critic")
@@ -32,18 +35,19 @@ def get_args():
 
     # Checkpointing
     parser.add_argument("--save-dir", type=str, default="./model", help="directory in which training state and model should be saved")
-    parser.add_argument("--save-rate", type=int, default=2000, help="save model once every time this many episodes are completed")
+    parser.add_argument("--save-rate", type=int, default=5000, help="save model once every time this many episodes are completed")
     parser.add_argument("--model-dir", type=str, default="", help="directory in which training state and model are loaded")
 
     # Evaluate
-    parser.add_argument("--evaluate-episodes", type=int, default=10, help="number of episodes for evaluating")
+    parser.add_argument("--evaluate-episodes", type=int, default=100, help="number of episodes for evaluating")
     parser.add_argument("--evaluate-episode-len", type=int, default=25, help="length of episodes for evaluating")
     parser.add_argument("--evaluate", type=bool, default=False, help="whether to evaluate the model")
-    parser.add_argument("--evaluate-rate", type=int, default=1000, help="how often to evaluate model")
+    parser.add_argument("--evaluate-rate", type=int, default=5000, help="how often to evaluate model")
     
     # Render
     parser.add_argument("--render", type=bool, default=False, help="whether to render environment during evaluation")
     
     args = parser.parse_args()
+    print(args)
 
     return args

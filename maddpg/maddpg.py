@@ -42,13 +42,17 @@ class MADDPG:
         if not os.path.exists(self.args.save_dir):
             os.makedirs(self.args.save_dir)
         # path to save the model
-        self.model_path = (
-            self.args.save_dir
-            + "/"
-            + self.args.scenario_name
-            + "/worker_"
-            + str(self.args.worker_id)
-        )
+        print("USING MP", self.args.use_mp)
+        if self.args.use_mp == False:
+            self.model_path = self.args.save_dir + "/" + self.args.scenario_name
+        else:
+            self.model_path = (
+                self.args.save_dir
+                + "/"
+                + self.args.scenario_name
+                + "/worker_"
+                + str(self.args.worker_id)
+            )
         if not os.path.exists(self.model_path + "/"):
             os.makedirs(self.model_path + "/")
         self.model_path = self.model_path + "/" + "agent_%d" % agent_id
@@ -74,21 +78,21 @@ class MADDPG:
                 )
             )
 
-        elif os.path.exists(self.model_path + "/temp_actor_params.pkl"):
+        elif os.path.exists(self.model_path + "/239_actor_params.pkl"):
             self.actor_network.load_state_dict(
-                torch.load(self.model_path + "/temp_actor_params.pkl")
+                torch.load(self.model_path + "/239_actor_params.pkl")
             )
             self.critic_network.load_state_dict(
-                torch.load(self.model_path + "/temp_critic_params.pkl")
+                torch.load(self.model_path + "/239_critic_params.pkl")
             )
             print(
                 "Agent {} successfully loaded actor_network: {}".format(
-                    self.agent_id, self.model_path + "/temp_actor_params.pkl"
+                    self.agent_id, self.model_path + "/239_actor_params.pkl"
                 )
             )
             print(
                 "Agent {} successfully loaded critic_network: {}".format(
-                    self.agent_id, self.model_path + "/temp_critic_params.pkl"
+                    self.agent_id, self.model_path + "/239_critic_params.pkl"
                 )
             )
 
@@ -176,24 +180,19 @@ class MADDPG:
 
     def save_model(self, train_step):
         num = str(train_step // self.args.save_rate)
-        model_path = os.path.join(self.args.save_dir, self.args.scenario_name)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        model_path = os.path.join(model_path, "agent_%d" % self.agent_id)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
         torch.save(
             self.actor_network.state_dict(),
-            model_path + "/" + num + "_actor_params.pkl",
+            self.model_path + "/" + num + "_actor_params.pkl",
         )
         torch.save(
             self.critic_network.state_dict(),
-            model_path + "/" + num + "_critic_params.pkl",
+            self.model_path + "/" + num + "_critic_params.pkl",
         )
 
     def save_temp_model(self):
         torch.save(
-            self.actor_network.state_dict(), self.model_path + "/temp_actor_params.pkl"
+            self.actor_network.state_dict(), 
+            self.model_path + "/temp_actor_params.pkl"
         )
         torch.save(
             self.critic_network.state_dict(),
