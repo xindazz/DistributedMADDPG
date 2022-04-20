@@ -6,7 +6,8 @@ import os
 
 from common.arguments import get_args
 from common.utils import make_env
-from maddpg.actor_critic import Actor, Critic
+
+# from maddpg.actor_critic import Actor, Critic
 
 # from runner_new import Runner, run
 
@@ -55,8 +56,9 @@ if __name__ == "__main__":
     for i in range(NUM_WORKERS):
         output_queues[i].get()
 
+    num_epochs = int(args.time_steps / args.evaluate_rate)
     # determine how many epochs to train
-    for _ in range(100000):
+    for _ in range(num_epochs):
         params = ("train",)
         # request worker to start training
         for i in range(NUM_WORKERS):
@@ -75,16 +77,16 @@ if __name__ == "__main__":
 
         # find the best model
         avg_rewards = np.array(avg_rewards)
-        best_worker, best_reward = np.argmin(avg_rewards), np.min(avg_rewards)
+        best_worker, best_reward = np.argmax(avg_rewards), np.max(avg_rewards)
         print(
             "----------------------Got best worker",
             best_worker,
             "with reward",
-            np.min(avg_rewards),
+            np.max(avg_rewards),
         )
 
         best_actor = actors[best_worker]
-        best_critic = actors[best_critic]
+        best_critic = critics[best_worker]
 
         params = (
             "update_model",
@@ -98,3 +100,11 @@ if __name__ == "__main__":
         # wait for workers to finish updating model
         for i in range(NUM_WORKERS):
             output_queues[i].get()
+
+    # shut down all workers
+    args = ("close",)
+    for i in range(NUM_WORKERS):
+        input_queues[i].put(args)
+
+    for p in processes:
+        p.join()

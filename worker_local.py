@@ -22,6 +22,7 @@ def worker_loop(input_queue, output_queue):
     episode_limit = None
     save_path = None
     agents = None
+    evaluate_rate = None
     returns = []
     returns_adv = []
 
@@ -45,6 +46,7 @@ def worker_loop(input_queue, output_queue):
             noise = args.noise_rate
             epsilon = args.epsilon
             episode_limit = args.max_episode_len
+            evaluate_rate = args.evaluate_rate
 
             buffer = Buffer(args)
 
@@ -72,111 +74,126 @@ def worker_loop(input_queue, output_queue):
         elif task_name == "train":
             print("Training...")
 
-            # reset environment before training
-            s = list(env.reset().values())
+            n = int(evaluate_rate / episode_limit)
 
-            for time_step in range(episode_limit):
-                # train adversaries
-                if args.train_adversaries:
-                    # actions contains actions of all agents in the environment
-                    actions = []
-                    with torch.no_grad():
-                        for agent_id, agent in enumerate(agents):
-                            action = agent.select_action(s[agent_id], noise, epsilon)
-                            actions.append(action)
-                    actions_dict = {
-                        agent_name: actions[agent_id]
-                        for agent_id, agent_name in enumerate(env.agents)
-                    }
-                    s_next, r, done, info = env.step(actions_dict)
-                    s_next, r = list(s_next.values()), list(r.values())
-                    buffer.store_episode(s, actions, r, s_next)
-                    s = s_next
+            for _ in range(n):
+                # reset environment before each episode
+                s = list(env.reset().values())
 
-                    if buffer.current_size >= args.batch_size:
-                        transitions = buffer.sample(args.batch_size)
-
-                        u_next = []
+                for time_step in range(episode_limit):
+                    # train adversaries
+                    if args.train_adversaries:
+                        # actions contains actions of all agents in the environment
+                        actions = []
                         with torch.no_grad():
-                            for agent_id in range(args.n_players):
-                                if args.use_gpu and args.gpu:
-                                    o_next = torch.tensor(
-                                        transitions["o_next_%d" % agent_id],
-                                        dtype=torch.float32,
-                                    ).cuda()
-                                else:
-                                    o_next = torch.tensor(
-                                        transitions["o_next_%d" % agent_id],
-                                        dtype=torch.float32,
-                                    )
-                                u_next.append(
-                                    agents[agent_id].policy.actor_target_network(o_next)
+                            for agent_id, agent in enumerate(agents):
+                                action = agent.select_action(
+                                    s[agent_id], noise, epsilon
                                 )
+                                actions.append(action)
+                        actions_dict = {
+                            agent_name: actions[agent_id]
+                            for agent_id, agent_name in enumerate(env.agents)
+                        }
+                        s_next, r, done, info = env.step(actions_dict)
+                        s_next, r = list(s_next.values()), list(r.values())
+                        buffer.store_episode(s, actions, r, s_next)
+                        s = s_next
 
-                        for agent_id, agent in enumerate(agents):
-                            agent.learn(transitions, u_next)
+                        if buffer.current_size >= args.batch_size:
+                            transitions = buffer.sample(args.batch_size)
 
-                # random adversaries
-                else:
-                    actions = []
-                    with torch.no_grad():
-                        for agent_id, agent in enumerate(agents):
-                            action = agent.select_action(s[agent_id], noise, epsilon)
-                            actions.append(action)
-                    for i in range(args.n_agents, args.n_players):
-                        # actions.append(np.array([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0]))
-                        actions.append(
-                            np.array(
-                                [0, np.random.rand(), 0, np.random.rand(), 0],
-                                dtype=np.float32,
-                            )
-                        )
-                    actions_dict = {
-                        agent_name: actions[agent_id]
-                        for agent_id, agent_name in enumerate(env.agents)
-                    }
-                    s_next, r, done, info = env.step(actions_dict)
-                    s_next, r = list(s_next.values()), list(r.values())
-                    buffer.store_episode(s, actions, r, s_next)
-                    s = s_next
+                            u_next = []
+                            with torch.no_grad():
+                                for agent_id in range(args.n_players):
+                                    if args.use_gpu and args.gpu:
+                                        o_next = torch.tensor(
+                                            transitions["o_next_%d" % agent_id],
+                                            dtype=torch.float32,
+                                        ).cuda()
+                                    else:
+                                        o_next = torch.tensor(
+                                            transitions["o_next_%d" % agent_id],
+                                            dtype=torch.float32,
+                                        )
+                                    u_next.append(
+                                        agents[agent_id].policy.actor_target_network(
+                                            o_next
+                                        )
+                                    )
 
-                    if buffer.current_size >= args.batch_size:
-                        transitions = buffer.sample(args.batch_size)
-                        u_next = []
+                            for agent_id, agent in enumerate(agents):
+                                agent.learn(transitions, u_next)
+
+                    # random adversaries
+                    else:
+                        actions = []
                         with torch.no_grad():
-                            for agent_id in range(args.n_agents):
-                                if args.use_gpu and args.gpu:
-                                    o_next = torch.tensor(
-                                        transitions["o_next_%d" % agent_id],
-                                        dtype=torch.float32,
-                                    ).cuda()
-                                else:
-                                    o_next = torch.tensor(
-                                        transitions["o_next_%d" % agent_id],
-                                        dtype=torch.float32,
-                                    )
-                                action_next = agents[
-                                    agent_id
-                                ].policy.actor_target_network(o_next)
-                                u_next.append(action_next)
-                            for i in range(args.n_agents, args.n_players):
-                                action_next = []
-                                for _ in range(args.batch_size):
-                                    # action_next.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-                                    action_next.append(
-                                        [0, np.random.rand(), 0, np.random.rand(), 0]
-                                    )
-                                if args.use_gpu and args.gpu:
-                                    action_next = torch.tensor(
-                                        action_next, dtype=torch.float32
-                                    ).cuda()
-                                else:
-                                    action_next = torch.tensor(
-                                        action_next, dtype=torch.float32
-                                    )
-                                u_next.append(action_next)
-                        for agent in agents:
-                            agent.learn(transitions, u_next)
+                            for agent_id, agent in enumerate(agents):
+                                action = agent.select_action(
+                                    s[agent_id], noise, epsilon
+                                )
+                                actions.append(action)
+                        for i in range(args.n_agents, args.n_players):
+                            # actions.append(np.array([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0]))
+                            actions.append(
+                                np.array(
+                                    [0, np.random.rand(), 0, np.random.rand(), 0],
+                                    dtype=np.float32,
+                                )
+                            )
+                        actions_dict = {
+                            agent_name: actions[agent_id]
+                            for agent_id, agent_name in enumerate(env.agents)
+                        }
+                        s_next, r, done, info = env.step(actions_dict)
+                        s_next, r = list(s_next.values()), list(r.values())
+                        buffer.store_episode(s, actions, r, s_next)
+                        s = s_next
+
+                        if buffer.current_size >= args.batch_size:
+                            transitions = buffer.sample(args.batch_size)
+                            u_next = []
+                            with torch.no_grad():
+                                for agent_id in range(args.n_agents):
+                                    if args.use_gpu and args.gpu:
+                                        o_next = torch.tensor(
+                                            transitions["o_next_%d" % agent_id],
+                                            dtype=torch.float32,
+                                        ).cuda()
+                                    else:
+                                        o_next = torch.tensor(
+                                            transitions["o_next_%d" % agent_id],
+                                            dtype=torch.float32,
+                                        )
+                                    action_next = agents[
+                                        agent_id
+                                    ].policy.actor_target_network(o_next)
+                                    u_next.append(action_next)
+                                for i in range(args.n_agents, args.n_players):
+                                    action_next = []
+                                    for _ in range(args.batch_size):
+                                        # action_next.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
+                                        action_next.append(
+                                            [
+                                                0,
+                                                np.random.rand(),
+                                                0,
+                                                np.random.rand(),
+                                                0,
+                                            ]
+                                        )
+                                    if args.use_gpu and args.gpu:
+                                        action_next = torch.tensor(
+                                            action_next, dtype=torch.float32
+                                        ).cuda()
+                                    else:
+                                        action_next = torch.tensor(
+                                            action_next, dtype=torch.float32
+                                        )
+                                    u_next.append(action_next)
+                            for agent in agents:
+                                agent.learn(transitions, u_next)
 
             # evaluate
             evaluate_returns = []
