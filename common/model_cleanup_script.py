@@ -1,6 +1,6 @@
 import os
 
-model_dir = "../model/simple_tag/"
+model_dir = "../model/simple_tag/worker_3/"
 
 agent_dirs = []
 

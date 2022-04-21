@@ -26,6 +26,8 @@ def worker_loop(input_queue, output_queue):
     returns = []
     returns_adv = []
 
+    total_time_steps = 0
+
     while True:
         input = input_queue.get()
 
@@ -76,7 +78,7 @@ def worker_loop(input_queue, output_queue):
 
             n = int(evaluate_rate / episode_limit)
 
-            for _ in range(n):
+            for num_episode in range(n):
                 # reset environment before each episode
                 s = list(env.reset().values())
 
@@ -194,6 +196,7 @@ def worker_loop(input_queue, output_queue):
                                     u_next.append(action_next)
                             for agent in agents:
                                 agent.learn(transitions, u_next)
+                    total_time_steps += 1
 
             # evaluate
             evaluate_returns = []
@@ -240,9 +243,9 @@ def worker_loop(input_queue, output_queue):
                 evaluate_returns.append(rewards)
                 if args.train_adversaries:
                     evaluate_returns_adv.append(rewards_adv)
-                    print("Returns is", rewards, " Adversary return is", rewards_adv)
-                else:
-                    print("Returns is", rewards)
+                    # print("Returns is", rewards, " Adversary return is", rewards_adv)
+                # else:
+                    # print("Returns is", rewards)
 
                 return_agent, return_agent_adv = (
                     sum(evaluate_returns) / args.evaluate_episodes,
@@ -275,7 +278,10 @@ def worker_loop(input_queue, output_queue):
             epsilon = max(0.05, epsilon - 0.0000005)
 
             # send model parameters back to master
-            output_queue.put((worker_id, return_agent, actor_data, critic_data))
+            if total_time_steps % args.sync_target_rate == 0:
+                output_queue.put((worker_id, return_agent, actor_data, critic_data))
+
+            
 
         elif task_name == "update_model":
             print("Updating models...")

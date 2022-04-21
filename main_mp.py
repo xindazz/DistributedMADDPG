@@ -16,7 +16,6 @@ from worker_local import worker_loop
 
 
 NUM_WORKERS = 4
-MAX_STEPS = 100000
 
 if __name__ == "__main__":
 
@@ -57,7 +56,7 @@ if __name__ == "__main__":
     for i in range(NUM_WORKERS):
         output_queues[i].get()
 
-    num_epochs = int(args.time_steps / args.evaluate_rate)
+    num_epochs = int(args.time_steps / args.sync_target_rate)
     # determine how many epochs to train
     for _ in tqdm(range(num_epochs)):
         params = ("train",)
