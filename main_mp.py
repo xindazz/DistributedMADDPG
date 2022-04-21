@@ -70,7 +70,6 @@ if __name__ == "__main__":
         critics = [None for _ in range(NUM_WORKERS)]
 
         # wait for worker to send params
-        print("Epoch", epoch, args.sync_target_rate // args.evaluate_rate)
         if (epoch + 1) % (args.sync_target_rate // args.evaluate_rate) == 0:
             for i in range(NUM_WORKERS):
                 worker_id, avg_reward, actor, critic = output_queues[i].get()
