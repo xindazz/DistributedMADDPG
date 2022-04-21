@@ -19,7 +19,7 @@ class Runner:
         self.episode_limit = args.max_episode_len
         self.env = env
         self.agents = self._init_agents()
-        self.buffer = Buffer(args, False)
+        self.buffer = Buffer(args)
 
         if self.args.train_adversaries:
             self.adversary_ids = range(self.args.n_agents, self.args.n_players)

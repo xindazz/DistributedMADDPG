@@ -4,10 +4,9 @@ import torch
 
 
 class Buffer:
-    def __init__(self, args, is_adversary):
+    def __init__(self, args):
         self.args = args
         self.size = args.buffer_size
-        self.is_adversary = is_adversary
 
         # memory management
         self.current_size = 0
