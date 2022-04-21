@@ -172,15 +172,15 @@ def worker_loop(input_queue, output_queue):
                                         for _ in range(args.batch_size):
                                             action_next.append([ 0, np.random.rand(), 0, np.random.rand(), 0])
                                         
-                                    if args.use_gpu and args.gpu:
-                                        action_next = torch.tensor(
-                                            action_next, dtype=torch.float32
-                                        ).cuda()
-                                    else:
-                                        action_next = torch.tensor(
-                                            action_next, dtype=torch.float32
-                                        )
-                                    u_next.append(action_next)
+                                        if args.use_gpu and args.gpu:
+                                            action_next = torch.tensor(
+                                                action_next, dtype=torch.float32
+                                            ).cuda()
+                                        else:
+                                            action_next = torch.tensor(
+                                                action_next, dtype=torch.float32
+                                            )
+                                        u_next.append(action_next)
 
                             if args.train_adversaries:
                                 for agent in agents:
@@ -214,13 +214,14 @@ def worker_loop(input_queue, output_queue):
                             for agent_id, agent in enumerate(agents):
                                 action = agent.select_action(s[agent_id], 0, 0)
                                 actions.append(action)
-                            for i in range(args.n_agents, args.n_players):
-                                actions.append(
-                                    np.array(
-                                        [0, np.random.rand(), 0, np.random.rand(), 0],
-                                        dtype=np.float32,
+                            if args.adversary_alg == "random":
+                                for i in range(args.n_agents, args.n_players):
+                                    actions.append(
+                                        np.array(
+                                            [0, np.random.rand(), 0, np.random.rand(), 0],
+                                            dtype=np.float32,
+                                        )
                                     )
-                                )
                     actions_dict = {
                         agent_name: actions[agent_id]
                         for agent_id, agent_name in enumerate(env.agents)

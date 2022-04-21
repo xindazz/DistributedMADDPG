@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument("--use-gpu", type=bool, default=False, help="use gpu or not")
 
     # MP
-    parser.add_argument("--mp", type=bool, default=True, help="do multiprocessing or not")
+    parser.add_argument("--mp", type=bool, default=False, help="do multiprocessing or not")
 
     # Core training parameters
     parser.add_argument("--lr-actor", type=float, default=1e-4, help="learning rate of actor")
