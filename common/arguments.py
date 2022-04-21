@@ -15,7 +15,7 @@ def get_args():
     parser.add_argument("--time-steps", type=int, default=1000000, help="number of time steps")
     parser.add_argument("--num-adversaries", type=int, default=1, help="number of adversaries")
     parser.add_argument("--train-adversaries", type=bool, default=False, help="whether to train adversaries or perform random actions")
-    parser.add_argument("--adversary-alg", type=str, default="MADDPG", help="adversary's algorithm")
+    parser.add_argument("--adversary-alg", type=str, default="random", help="adversary's algorithm")
 
     # GPU
     parser.add_argument("--use-gpu", type=bool, default=False, help="use gpu or not")
