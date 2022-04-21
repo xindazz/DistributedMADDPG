@@ -12,7 +12,7 @@ def get_args():
     # Environment
     parser.add_argument("--scenario-name", type=str, default="simple_tag", help="name of the scenario script")
     parser.add_argument("--max-episode-len", type=int, default=100, help="maximum episode length")
-    parser.add_argument("--time-steps", type=int, default=1000000, help="number of time steps")
+    parser.add_argument("--time-steps", type=int, default=2000000, help="number of time steps")
     parser.add_argument("--num-adversaries", type=int, default=1, help="number of adversaries")
     parser.add_argument("--train-adversaries", type=bool, default=False, help="whether to train adversaries or perform random actions")
     parser.add_argument("--adversary-alg", type=str, default="random", help="adversary's algorithm")
@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument("--use-gpu", type=bool, default=False, help="use gpu or not")
 
     # MP
-    parser.add_argument("--mp", type=bool, default=False, help="do multiprocessing or not")
+    parser.add_argument("--mp", type=bool, default=True, help="do multiprocessing or not")
 
     # Core training parameters
     parser.add_argument("--lr-actor", type=float, default=1e-4, help="learning rate of actor")

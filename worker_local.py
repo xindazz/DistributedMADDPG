@@ -12,6 +12,8 @@ from common.utils import make_env
 
 
 def worker_loop(input_queue, output_queue):
+    np.random.seed(np.randint(10000))
+    
     env = None
     args = None
     id = None

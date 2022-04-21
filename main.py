@@ -11,6 +11,7 @@ if __name__ == '__main__':
     # get the params
     args = get_args()
     env, args = make_env(args)
+    # args.worker_id = 1
     runner = Runner(args, env)
     save_args_to_file(args, args.save_dir)
     if args.evaluate:

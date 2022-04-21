@@ -1,7 +1,9 @@
 import os
 
-model_dirs = ["../model/simple_tag/worker_0/", "../model/simple_tag/worker_1/", 
-              "../model/simple_tag/worker_2/", "../model/simple_tag/worker_3/"]
+dir = "../model_loaded_adversary/simple_tag/"
+
+model_dirs = [dir + "worker_0/", dir + "worker_1/", 
+              dir + "worker_2/", dir + "worker_3/"]
 
 
 for model_dir in model_dirs:
@@ -13,6 +15,8 @@ for model_dir in model_dirs:
 
     for dir in agent_dirs:
         for filename in os.listdir(dir):
+            if filename.split("_")[0].isnumeric() == False:
+                continue
             num = int(filename.split("_")[0])
             if (num + 1) % 50 != 0:
                 os.remove(dir + "/" + filename)
