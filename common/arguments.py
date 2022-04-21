@@ -11,7 +11,7 @@ def get_args():
     parser = argparse.ArgumentParser("Reinforcement Learning experiments for multiagent environments")
     # Environment
     parser.add_argument("--scenario-name", type=str, default="simple_tag", help="name of the scenario script")
-    parser.add_argument("--max-episode-len", type=int, default=25, help="maximum episode length")
+    parser.add_argument("--max-episode-len", type=int, default=100, help="maximum episode length")
     parser.add_argument("--time-steps", type=int, default=1000000, help="number of time steps")
     parser.add_argument("--num-adversaries", type=int, default=1, help="number of adversaries")
     parser.add_argument("--train-adversaries", type=bool, default=False, help="whether to train adversaries or perform random actions")
@@ -42,7 +42,7 @@ def get_args():
 
     # Evaluate
     parser.add_argument("--evaluate-episodes", type=int, default=100, help="number of episodes for evaluating")
-    parser.add_argument("--evaluate-episode-len", type=int, default=25, help="length of episodes for evaluating")
+    parser.add_argument("--evaluate-episode-len", type=int, default=100, help="length of episodes for evaluating")
     parser.add_argument("--evaluate", type=bool, default=False, help="whether to evaluate the model")
     parser.add_argument("--evaluate-rate", type=int, default=1000, help="how often to evaluate model")
     parser.add_argument("--sync-target-rate", type=int, default=5000, help="how often to sync target network to that of best worker")

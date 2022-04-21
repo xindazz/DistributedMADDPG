@@ -34,7 +34,7 @@ def make_env(args):
     
     num_good = 1
     num_adversaries = 3
-    env = simple_tag_v2.parallel_env(num_good=num_good, num_adversaries=num_adversaries, num_obstacles=2, max_cycles=25, continuous_actions=True)
+    env = simple_tag_v2.parallel_env(num_good=num_good, num_adversaries=num_adversaries, num_obstacles=2, max_cycles=args.max_episode_len, continuous_actions=True)
     s, reward, done, info = env.reset()
 
     args.n_players = num_good + num_adversaries
@@ -45,3 +45,10 @@ def make_env(args):
     args.low_action = 0
 
     return env, args
+
+
+def save_args_to_file(args, path):
+    print(path + "/args.txt")
+    text_file = open(path + "/args.txt", "w")
+    n = text_file.write(str(vars(args)))
+    text_file.close()

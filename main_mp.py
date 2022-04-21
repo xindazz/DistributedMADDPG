@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 
 from common.arguments import get_args
-from common.utils import make_env
+from common.utils import make_env, save_args_to_file
 
 # from maddpg.actor_critic import Actor, Critic
 
@@ -46,6 +46,7 @@ if __name__ == "__main__":
     # get the params
     args = get_args()
     _, args = make_env(args)
+    save_args_to_file(args, args.save_dir)
 
     # send params to workers as initialization
     for i in range(NUM_WORKERS):
