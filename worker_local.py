@@ -60,14 +60,15 @@ def worker_loop(input_queue, output_queue):
 
             # initalize agents and adversaries
             agents = []
-            if args.train_adversaries:
-                for i in range(args.n_players):
-                    agent = Agent(i, args)
-                    agents.append(agent)
-            else:
+            if args.adversary_alg == "random":
                 for i in range(args.n_agents):
                     agent = Agent(i, args)
                     agents.append(agent)
+            else:
+                for i in range(args.n_players):
+                    agent = Agent(i, args)
+                    agents.append(agent)
+                
 
             print("Initialization complete.")
 
@@ -128,23 +129,17 @@ def worker_loop(input_queue, output_queue):
                             for agent_id, agent in enumerate(agents):
                                 agent.learn(transitions, u_next)
 
-                    # random adversaries
+                    # fixed adversaries
                     else:
                         actions = []
                         with torch.no_grad():
                             for agent_id, agent in enumerate(agents):
-                                action = agent.select_action(
-                                    s[agent_id], noise, epsilon
-                                )
+                                action = agent.select_action(s[agent_id], noise, epsilon)
                                 actions.append(action)
-                        for i in range(args.n_agents, args.n_players):
-                            # actions.append(np.array([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0]))
-                            actions.append(
-                                np.array(
-                                    [0, np.random.rand(), 0, np.random.rand(), 0],
-                                    dtype=np.float32,
-                                )
-                            )
+                            if args.adversary_alg == "random":
+                                for i in range(args.n_agents, args.n_players):
+                                    actions.append(np.array([0, np.random.rand(), 0, np.random.rand(), 0], dtype=np.float32))
+                            
                         actions_dict = {
                             agent_name: actions[agent_id]
                             for agent_id, agent_name in enumerate(env.agents)
@@ -158,45 +153,42 @@ def worker_loop(input_queue, output_queue):
                             transitions = buffer.sample(args.batch_size)
                             u_next = []
                             with torch.no_grad():
+                                for agent_id, agent in enumerate(agents):
+                                    if args.use_gpu and args.gpu:
+                                        o_next = torch.tensor(
+                                            transitions["o_next_%d" % agent_id],
+                                            dtype=torch.float32,
+                                        ).cuda()
+                                    else:
+                                        o_next = torch.tensor(
+                                            transitions["o_next_%d" % agent_id],
+                                            dtype=torch.float32,
+                                        )
+                                    action_next = agent.policy.actor_target_network(o_next)
+                                    u_next.append(action_next)
+                                if args.adversary_alg == "random":
+                                    for i in range(args.n_agents, args.n_players):
+                                        action_next = []
+                                        for _ in range(args.batch_size):
+                                            action_next.append([ 0, np.random.rand(), 0, np.random.rand(), 0])
+                                        
+                                        if args.use_gpu and args.gpu:
+                                            action_next = torch.tensor(
+                                                action_next, dtype=torch.float32
+                                            ).cuda()
+                                        else:
+                                            action_next = torch.tensor(
+                                                action_next, dtype=torch.float32
+                                            )
+                                        u_next.append(action_next)
+
+                            if args.train_adversaries:
+                                for agent in agents:
+                                    agent.learn(transitions, u_next)
+                            else:
                                 for agent_id in range(args.n_agents):
-                                    if args.use_gpu and args.gpu:
-                                        o_next = torch.tensor(
-                                            transitions["o_next_%d" % agent_id],
-                                            dtype=torch.float32,
-                                        ).cuda()
-                                    else:
-                                        o_next = torch.tensor(
-                                            transitions["o_next_%d" % agent_id],
-                                            dtype=torch.float32,
-                                        )
-                                    action_next = agents[
-                                        agent_id
-                                    ].policy.actor_target_network(o_next)
-                                    u_next.append(action_next)
-                                for i in range(args.n_agents, args.n_players):
-                                    action_next = []
-                                    for _ in range(args.batch_size):
-                                        # action_next.append([0, np.random.rand() * 2 - 1, 0, np.random.rand() * 2 - 1, 0])
-                                        action_next.append(
-                                            [
-                                                0,
-                                                np.random.rand(),
-                                                0,
-                                                np.random.rand(),
-                                                0,
-                                            ]
-                                        )
-                                    if args.use_gpu and args.gpu:
-                                        action_next = torch.tensor(
-                                            action_next, dtype=torch.float32
-                                        ).cuda()
-                                    else:
-                                        action_next = torch.tensor(
-                                            action_next, dtype=torch.float32
-                                        )
-                                    u_next.append(action_next)
-                            for agent in agents:
-                                agent.learn(transitions, u_next)
+                                    agents[agent_id].learn(transitions, u_next)
+
                     total_time_steps += 1
                     # print(total_time_steps)
 
@@ -222,13 +214,14 @@ def worker_loop(input_queue, output_queue):
                             for agent_id, agent in enumerate(agents):
                                 action = agent.select_action(s[agent_id], 0, 0)
                                 actions.append(action)
-                            for i in range(args.n_agents, args.n_players):
-                                actions.append(
-                                    np.array(
-                                        [0, np.random.rand(), 0, np.random.rand(), 0],
-                                        dtype=np.float32,
+                            if args.adversary_alg == "random":
+                                for i in range(args.n_agents, args.n_players):
+                                    actions.append(
+                                        np.array(
+                                            [0, np.random.rand(), 0, np.random.rand(), 0],
+                                            dtype=np.float32,
+                                        )
                                     )
-                                )
                     actions_dict = {
                         agent_name: actions[agent_id]
                         for agent_id, agent_name in enumerate(env.agents)
