@@ -138,11 +138,14 @@ class MADDPG:
 
         for key in transitions.keys():
             if self.args.use_gpu and self.args.gpu:
-                transitions[key] = torch.tensor(
-                    transitions[key], dtype=torch.float32
-                ).cuda()
+                if (torch.is_tensor(transitions[key]) == False):
+                    transitions[key] = torch.from_numpy(transitions[key]).type(torch.float32).cuda()
+                else:
+                    transitions[key] = transitions[key].cuda()
             else:
-                transitions[key] = torch.tensor(transitions[key], dtype=torch.float32)
+                if (torch.is_tensor(transitions[key]) == False):
+                    transitions[key] = torch.from_numpy(transitions[key]).type(torch.float32)
+                
         r = transitions["r_%d" % self.agent_id]
         o, u, o_next = [], [], []
         for agent_id in range(self.args.n_players):
@@ -188,7 +191,7 @@ class MADDPG:
         critic_loss.backward()
         self.critic_optim.step()
 
-        if self.time_step > 0 and self.train_step % self.args.soft_update_rate == 0:
+        if self.train_step > 0 and self.train_step % self.args.soft_update_rate == 0:
             self._soft_update_target_network()
         if self.train_step > 0 and self.train_step % self.args.save_rate == 0:
             self.save_model(self.train_step)
