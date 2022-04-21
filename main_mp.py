@@ -56,9 +56,9 @@ if __name__ == "__main__":
     for i in range(NUM_WORKERS):
         output_queues[i].get()
 
-    num_epochs = int(args.time_steps / args.sync_target_rate)
+    num_epochs = int(args.time_steps / args.evaluate_rate)
     # determine how many epochs to train
-    for _ in tqdm(range(num_epochs)):
+    for epoch in tqdm(range(num_epochs)):
         params = ("train",)
         # request worker to start training
         for i in range(NUM_WORKERS):
@@ -68,38 +68,44 @@ if __name__ == "__main__":
         actors = [None for _ in range(NUM_WORKERS)]
         critics = [None for _ in range(NUM_WORKERS)]
 
-        # wait for woker to finish training one epoch
-        for i in range(NUM_WORKERS):
-            worker_id, avg_reward, actor, critic = output_queues[i].get()
-            avg_rewards[worker_id] = avg_reward
-            actors[worker_id] = actor
-            critics[worker_id] = critic
+        # wait for worker to send params
+        print("Epoch", epoch, args.sync_target_rate // args.evaluate_rate)
+        if (epoch + 1) % (args.sync_target_rate // args.evaluate_rate) == 0:
+            for i in range(NUM_WORKERS):
+                worker_id, avg_reward, actor, critic = output_queues[i].get()
+                avg_rewards[worker_id] = avg_reward
+                actors[worker_id] = actor
+                critics[worker_id] = critic
 
-        # find the best model
-        avg_rewards = np.array(avg_rewards)
-        best_worker, best_reward = np.argmax(avg_rewards), np.max(avg_rewards)
-        print(
-            "----------------------Got best worker",
-            best_worker,
-            "with reward",
-            np.max(avg_rewards),
-        )
+            # find the best model
+            avg_rewards = np.array(avg_rewards)
+            best_worker, best_reward = np.argmax(avg_rewards), np.max(avg_rewards)
+            print(
+                "----------------------Got best worker",
+                best_worker,
+                "with reward",
+                np.max(avg_rewards),
+            )
 
-        best_actor = actors[best_worker]
-        best_critic = critics[best_worker]
+            best_actor = actors[best_worker]
+            best_critic = critics[best_worker]
 
-        params = (
-            "update_model",
-            best_actor,
-            best_critic,
-        )
-        # send models back to workers to update
-        for i in range(NUM_WORKERS):
-            input_queues[i].put(params)
+            params = (
+                "update_model",
+                best_actor,
+                best_critic,
+            )
+            # send models back to workers to update
+            for i in range(NUM_WORKERS):
+                input_queues[i].put(params)
 
-        # wait for workers to finish updating model
-        for i in range(NUM_WORKERS):
-            output_queues[i].get()
+            # wait for workers to finish updating model
+            for i in range(NUM_WORKERS):
+                output_queues[i].get()
+        else:
+            # wait for workers to finish a evaluation loop
+            for i in range(NUM_WORKERS):
+                output_queues[i].get()
 
     # shut down all workers
     args = ("close",)

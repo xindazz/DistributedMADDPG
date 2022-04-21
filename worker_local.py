@@ -27,6 +27,7 @@ def worker_loop(input_queue, output_queue):
     returns_adv = []
 
     total_time_steps = 0
+    num_evaluates = 0
 
     while True:
         input = input_queue.get()
@@ -197,6 +198,7 @@ def worker_loop(input_queue, output_queue):
                             for agent in agents:
                                 agent.learn(transitions, u_next)
                     total_time_steps += 1
+                    # print(total_time_steps)
 
             # evaluate
             evaluate_returns = []
@@ -251,6 +253,7 @@ def worker_loop(input_queue, output_queue):
                     sum(evaluate_returns) / args.evaluate_episodes,
                     sum(evaluate_returns_adv) / args.evaluate_episodes,
                 )
+                # print("Returns is", return_agent, " Adversary return is", return_agent_adv)
 
             # collect model parameters
             actor_data, critic_data = [], []
@@ -262,12 +265,12 @@ def worker_loop(input_queue, output_queue):
             s = list(env.reset().values())
             returns.append(return_agent)
             plt.figure()
-            plt.plot(range(len(returns)), returns, label="Agent")
+            plt.plot(np.arange(len(returns)) * args.evaluate_rate / 1000, returns, label="Agent")
             if args.train_adversaries:
                 returns_adv.append(return_agent_adv)
-                plt.plot(range(len(returns_adv)), returns_adv, label="Adversary")
+                plt.plot(np.arange(len(returns_adv)) * args.evaluate_rate / 1000, returns_adv, label="Adversary")
                 np.save(save_path + "/returns_adv.pkl", returns_adv)
-            plt.xlabel("episode * " + str(args.evaluate_rate / episode_limit))
+            plt.xlabel("timestep * " + str(1000))
             plt.ylabel("average returns")
             plt.legend()
             plt.savefig(save_path + "/plt.png", format="png")
@@ -277,10 +280,13 @@ def worker_loop(input_queue, output_queue):
             noise = max(0.05, noise - 0.0000005)
             epsilon = max(0.05, epsilon - 0.0000005)
 
-            # send model parameters back to master
-            if total_time_steps % args.sync_target_rate == 0:
-                output_queue.put((worker_id, return_agent, actor_data, critic_data))
+            num_evaluates += 1
 
+            # send model parameters back to master
+            if num_evaluates % (args.sync_target_rate // args.evaluate_rate) == 0:
+                output_queue.put((worker_id, return_agent, actor_data, critic_data))
+            else:
+                output_queue.put(True)
             
 
         elif task_name == "update_model":
