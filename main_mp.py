@@ -66,16 +66,16 @@ if __name__ == "__main__":
             input_queues[i].put(params)
 
         avg_rewards = [None for _ in range(NUM_WORKERS)]
-        actors = [None for _ in range(NUM_WORKERS)]
         critics = [None for _ in range(NUM_WORKERS)]
+        target_critics = [None for _ in range(NUM_WORKERS)]
 
         # wait for worker to send params
         if (epoch + 1) % (args.sync_target_rate // args.evaluate_rate) == 0:
             for i in range(NUM_WORKERS):
-                worker_id, avg_reward, actor, critic = output_queues[i].get()
+                worker_id, avg_reward, critic, target_critic = output_queues[i].get()
                 avg_rewards[worker_id] = avg_reward
-                actors[worker_id] = actor
                 critics[worker_id] = critic
+                target_critics[worker_id] = target_critic
 
             # find the best model
             avg_rewards = np.array(avg_rewards)
@@ -87,13 +87,13 @@ if __name__ == "__main__":
                 np.max(avg_rewards),
             )
 
-            best_actor = actors[best_worker]
             best_critic = critics[best_worker]
+            best_target_ciritc = target_critics[best_worker]
 
             params = (
                 "update_model",
-                best_actor,
                 best_critic,
+                best_target_ciritc,
             )
             # send models back to workers to update
             for i in range(NUM_WORKERS):

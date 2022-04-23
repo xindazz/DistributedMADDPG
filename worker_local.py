@@ -250,12 +250,6 @@ def worker_loop(input_queue, output_queue):
                 )
                 # print("Returns is", return_agent, " Adversary return is", return_agent_adv)
 
-            # collect model parameters
-            actor_data, critic_data = [], []
-            for agent_id, agent in enumerate(agents):
-                actor_data.append(agent.policy.actor_network.state_dict())
-                critic_data.append(agent.policy.critic_network.state_dict())
-
             # output graphs
             s = list(env.reset().values())
             returns.append(return_agent)
@@ -279,7 +273,12 @@ def worker_loop(input_queue, output_queue):
 
             # send model parameters back to master
             if num_evaluates % (args.sync_target_rate // args.evaluate_rate) == 0:
-                output_queue.put((worker_id, return_agent, actor_data, critic_data))
+                # collect model parameters
+                critic_data, target_critic_data = [], []
+                for agent_id, agent in enumerate(agents):
+                    critic_data.append(agent.policy.critic_network.state_dict())
+                    target_critic_data.append(agent.policy.critic_target_network.state_dict())
+                output_queue.put((worker_id, return_agent, critic_data, target_critic_data))
             else:
                 output_queue.put(True)
             
@@ -288,16 +287,16 @@ def worker_loop(input_queue, output_queue):
             print("Updating models...")
 
             # get the new target networks (in state_dict format)
-            actor = input[1]
-            critic = input[2]
+            critic = input[1]
+            target_critic = input[2]
 
             # update each agent's actor critic network
             for i in range(args.n_agents):
                 curr_agent = agents[i]
-                curr_actor_network = actor[i]
                 curr_critic_network = critic[i]
-                curr_agent.policy.actor_network.load_state_dict(curr_actor_network)
+                curr_target_critic_network = target_critic[i]
                 curr_agent.policy.critic_network.load_state_dict(curr_critic_network)
+                curr_agent.policy.critic_target_network.load_state_dict(curr_target_critic_network)
 
             # return an acknowledgement back to master
             output_queue.put(True)
