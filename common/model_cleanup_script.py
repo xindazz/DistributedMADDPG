@@ -1,12 +1,12 @@
 import os
 
-dir = "../model_loaded_adversary/simple_tag/"
+dir = "../model_pretrained/simple_tag/"
 
 model_dirs = [dir + "worker_0/", dir + "worker_1/", 
               dir + "worker_2/", dir + "worker_3/"]
 
 
-for model_dir in model_dirs:
+for model_dir in ["../model_pretrained_no_worker/simple_tag/"]:
     agent_dirs = []
 
     for dir in os.listdir(model_dir):

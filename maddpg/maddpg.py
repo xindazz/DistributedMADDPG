@@ -56,11 +56,29 @@ class MADDPG:
         if not os.path.exists(self.model_path + "/"):
             os.makedirs(self.model_path + "/")
         self.model_path = self.model_path + "/" + "agent_%d" % agent_id
+        print(self.model_path)
         if not os.path.exists(self.model_path + "/"):
             os.makedirs(self.model_path + "/")
 
         # 加载模型
-        if os.path.exists(self.model_path + "/actor_params.pkl"):
+        if os.path.exists(self.model_path + "/999_actor_params.pkl"):
+            self.actor_network.load_state_dict(
+                torch.load(self.model_path + "/999_actor_params.pkl")
+            )
+            self.critic_network.load_state_dict(
+                torch.load(self.model_path + "/999_critic_params.pkl")
+            )
+            print(
+                "Agent {} successfully loaded actor_network: {}".format(
+                    self.agent_id, self.model_path + "/999_actor_params.pkl"
+                )
+            )
+            print(
+                "Agent {} successfully loaded critic_network: {}".format(
+                    self.agent_id, self.model_path + "/999_critic_params.pkl"
+                )
+            )
+        elif os.path.exists(self.model_path + "/actor_params.pkl"):
             self.actor_network.load_state_dict(
                 torch.load(self.model_path + "/actor_params.pkl")
             )
@@ -77,24 +95,6 @@ class MADDPG:
                     self.agent_id, self.model_path + "/critic_params.pkl"
                 )
             )
-        
-        # elif os.path.exists(self.model_path + "/999_actor_params.pkl"):
-        #     self.actor_network.load_state_dict(
-        #         torch.load(self.model_path + "/999_actor_params.pkl")
-        #     )
-        #     self.critic_network.load_state_dict(
-        #         torch.load(self.model_path + "/999_critic_params.pkl")
-        #     )
-        #     print(
-        #         "Agent {} successfully loaded actor_network: {}".format(
-        #             self.agent_id, self.model_path + "/999_actor_params.pkl"
-        #         )
-        #     )
-        #     print(
-        #         "Agent {} successfully loaded critic_network: {}".format(
-        #             self.agent_id, self.model_path + "/999_critic_params.pkl"
-        #         )
-        #     )
         # elif os.path.exists(self.args.save_dir + "/" + self.args.scenario_name + "/worker_0/agent_" + str(self.agent_id) + "/199_actor_params.pkl"):
         #     self.actor_network.load_state_dict(
         #         torch.load(self.args.save_dir + "/" + self.args.scenario_name + "/worker_0/agent_" + str(self.agent_id) + "/199_actor_params.pkl")

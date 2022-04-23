@@ -1,6 +1,7 @@
 from tqdm import tqdm
 from agent import Agent
 from common.replay_buffer import Buffer
+from common.utils import *
 import torch
 import os
 import numpy as np
@@ -152,9 +153,13 @@ class Runner:
             s = list(self.env.reset().values())
             rewards = 0
             rewards_adv = 0
+            frames = []
             for time_step in range(self.args.evaluate_episode_len):
                 if self.args.render:
-                    self.env.render()
+                    if self.args.save_render:
+                        frames.append(self.env.render(mode="rgb_array"))
+                    else:
+                        self.env.render()
                     time.sleep(0.05)
                 actions = []
                 with torch.no_grad():
@@ -180,6 +185,8 @@ class Runner:
     
                 s = s_next
             returns.append(rewards)
+            if self.args.save_render:
+                save_frames_as_gif(frames, path=self.args.save_dir, filename="animation_" + str(episode) + ".gif")
             if self.args.train_adversaries:
                 returns_adv.append(rewards_adv)
             #     print('Returns is', rewards, " Adversary return is", rewards_adv)
