@@ -2,16 +2,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+HIDDEN_SIZE = 64
 
 # define the actor network
 class Actor(nn.Module):
     def __init__(self, args, agent_id):
         super(Actor, self).__init__()
         self.max_action = args.high_action
-        self.fc1 = nn.Linear(args.obs_shape[agent_id], 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, 64)
-        self.action_out = nn.Linear(64, args.action_shape[agent_id])
+        self.fc1 = nn.Linear(args.obs_shape[agent_id], HIDDEN_SIZE)
+        self.fc2 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
+        self.fc3 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
+        self.action_out = nn.Linear(HIDDEN_SIZE, args.action_shape[agent_id])
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
@@ -34,10 +35,10 @@ class Critic(nn.Module):
         # Input dim is all states and actions
         else: 
             self.input_dim = sum(args.obs_shape) + sum(args.action_shape)
-        self.fc1 = nn.Linear(self.input_dim, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, 64)
-        self.q_out = nn.Linear(64, 1)
+        self.fc1 = nn.Linear(self.input_dim, HIDDEN_SIZE)
+        self.fc2 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
+        self.fc3 = nn.Linear(HIDDEN_SIZE, HIDDEN_SIZE)
+        self.q_out = nn.Linear(HIDDEN_SIZE, 1)
 
     def forward(self, state, action):
         state = torch.cat(state, dim=1)

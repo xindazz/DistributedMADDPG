@@ -4,9 +4,7 @@ from maddpg.actor_critic import Actor, Critic
 
 
 class MADDPG:
-    def __init__(
-        self, args, agent_id
-    ):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
+    def __init__(self, args, agent_id):  # 因为不同的agent的obs、act维度可能不一样，所以神经网络不同,需要agent_id来区分
         self.args = args
         self.agent_id = agent_id
         self.train_step = 0
@@ -41,6 +39,7 @@ class MADDPG:
         # create the dict for store the model
         if not os.path.exists(self.args.save_dir):
             os.makedirs(self.args.save_dir)
+
         # path to save the model
         print("USING MP", self.args.mp)
         if self.args.mp == False:
@@ -56,28 +55,24 @@ class MADDPG:
         if not os.path.exists(self.model_path + "/"):
             os.makedirs(self.model_path + "/")
         self.model_path = self.model_path + "/" + "agent_%d" % agent_id
-        print(self.model_path)
         if not os.path.exists(self.model_path + "/"):
             os.makedirs(self.model_path + "/")
 
-        # 加载模型
-        if os.path.exists(self.model_path + "/999_actor_params.pkl"):
+        # Load model
+        if os.path.exists(self.model_path + "/" + str(self.args.load_num) + "_actor_params.pkl"):
             self.actor_network.load_state_dict(
-                torch.load(self.model_path + "/999_actor_params.pkl")
+                torch.load(self.model_path + "/" + str(self.args.load_num) + "_actor_params.pkl")
             )
             self.critic_network.load_state_dict(
-                torch.load(self.model_path + "/999_critic_params.pkl")
+                torch.load(self.model_path + "/" + str(self.args.load_num) + "_critic_params.pkl")
             )
-            print(
-                "Agent {} successfully loaded actor_network: {}".format(
-                    self.agent_id, self.model_path + "/999_actor_params.pkl"
-                )
-            )
-            print(
-                "Agent {} successfully loaded critic_network: {}".format(
-                    self.agent_id, self.model_path + "/999_critic_params.pkl"
-                )
-            )
+            print("Agent {} successfully loaded actor_network: {}".format(
+                    self.agent_id, self.model_path + "/" + str(self.args.load_num) + "_actor_params.pkl"
+            ))
+            print("Agent {} successfully loaded critic_network: {}".format(
+                    self.agent_id, self.model_path + "/" + str(self.args.load_num) + "_critic_params.pkl"
+            ))
+
         elif os.path.exists(self.model_path + "/actor_params.pkl"):
             self.actor_network.load_state_dict(
                 torch.load(self.model_path + "/actor_params.pkl")
@@ -85,33 +80,13 @@ class MADDPG:
             self.critic_network.load_state_dict(
                 torch.load(self.model_path + "/critic_params.pkl")
             )
-            print(
-                "Agent {} successfully loaded actor_network: {}".format(
+            print("Agent {} successfully loaded actor_network: {}".format(
                     self.agent_id, self.model_path + "/actor_params.pkl"
-                )
-            )
-            print(
-                "Agent {} successfully loaded critic_network: {}".format(
+            ))
+            print("Agent {} successfully loaded critic_network: {}".format(
                     self.agent_id, self.model_path + "/critic_params.pkl"
-                )
-            )
-        # elif os.path.exists(self.args.save_dir + "/" + self.args.scenario_name + "/worker_0/agent_" + str(self.agent_id) + "/199_actor_params.pkl"):
-        #     self.actor_network.load_state_dict(
-        #         torch.load(self.args.save_dir + "/" + self.args.scenario_name + "/worker_0/agent_" + str(self.agent_id) + "/199_actor_params.pkl")
-        #     )
-        #     self.critic_network.load_state_dict(
-        #         torch.load(self.args.save_dir + "/" + self.args.scenario_name + "/worker_0/agent_" + str(self.agent_id) + "/199_critic_params.pkl")
-        #     )
-        #     print(
-        #         "Agent {} successfully loaded actor_network: {}".format(
-        #             self.agent_id, self.model_path + "/199_actor_params.pkl"
-        #         )
-        #     )
-        #     print(
-        #         "Agent {} successfully loaded critic_network: {}".format(
-        #             self.agent_id, self.model_path + "/199_critic_params.pkl"
-        #         )
-        #     )
+            ))
+     
 
     # soft update
     def _soft_update_target_network(self):
@@ -182,7 +157,7 @@ class MADDPG:
             u[self.agent_id] = self.actor_network(o[self.agent_id])
         actor_loss = -self.critic_network(o, u).mean()
         # if self.agent_id == 0:
-        #     print('critic_loss is {}, actor_loss is {}'.format(critic_loss, actor_loss))
+        # print('agent {}: critic_loss is {}, actor_loss is {}'.format(self.agent_id, critic_loss, actor_loss))
         # update the network
         self.actor_optim.zero_grad()
         actor_loss.backward()
@@ -193,9 +168,12 @@ class MADDPG:
 
         if self.train_step > 0 and self.train_step % self.args.soft_update_rate == 0:
             self._soft_update_target_network()
+
         if self.train_step > 0 and self.train_step % self.args.save_rate == 0:
             self.save_model(self.train_step)
+
         self.train_step += 1
+        
 
         # self.save_temp_model()
 

@@ -45,6 +45,10 @@ def get_args():
     parser.add_argument("--evaluate-episode-len", type=int, default=50, help="length of episodes for evaluating")
     parser.add_argument("--evaluate", type=bool, default=False, help="whether to evaluate the model")
     parser.add_argument("--evaluate-rate", type=int, default=1000, help="how often to evaluate model")
+    parser.add_argument("--load-num", type=int, default=999, help="Prefix of saved model pkl file to load")
+    parser.add_argument("--worker-id", type=int, default=0, help="Id if worker to load model for evaluation")
+
+    # Sync rate for multiprocessing
     parser.add_argument("--sync-target-rate", type=int, default=5000, help="how often to sync target network to that of best worker")
     
     # Render
@@ -53,6 +57,5 @@ def get_args():
     
     args = parser.parse_args()
     print(args)
-    args.worker_id=0
     
     return args

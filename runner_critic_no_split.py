@@ -164,8 +164,8 @@ class Runner:
                 actions = []
                 with torch.no_grad():
                     if self.args.train_adversaries:
-                        for agent_id, agent in enumerate(self.agents):
-                            action = agent.select_action(s[agent_id], 0, 0)
+                        for agent_id in range(self.args.n_players):
+                            action = self.agents[agent_id].select_action(s[agent_id], 0, 0)
                             actions.append(action)
                     else:
                         for agent_id, agent in enumerate(self.agents):
@@ -177,6 +177,7 @@ class Runner:
                 actions_dict = {agent_name: actions[agent_id] for agent_id, agent_name in enumerate(self.env.agents)}
                 s_next, r, done, info = self.env.step(actions_dict)
                 s_next, r = list(s_next.values()), list(r.values())
+
                 for i in range(self.args.n_agents):
                     rewards += r[i]
                 if self.args.train_adversaries:
