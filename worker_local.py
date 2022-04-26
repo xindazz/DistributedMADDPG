@@ -275,9 +275,9 @@ def worker_loop(input_queue, output_queue):
             if num_evaluates % (args.sync_target_rate // args.evaluate_rate) == 0:
                 # collect model parameters
                 critic_data, target_critic_data = [], []
-                for agent_id, agent in enumerate(agents):
-                    critic_data.append(agent.policy.critic_network.state_dict())
-                    target_critic_data.append(agent.policy.critic_target_network.state_dict())
+                for agent_id in range(args.n_agents):
+                    critic_data.append(agents[agent_id].policy.critic_network.state_dict())
+                    target_critic_data.append(agents[agent_id].policy.critic_target_network.state_dict())
                 output_queue.put((worker_id, return_agent, critic_data, target_critic_data))
             else:
                 output_queue.put(True)
