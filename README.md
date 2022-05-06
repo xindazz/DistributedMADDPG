@@ -23,3 +23,8 @@ $ python main.py
 ```
 
 Read more about specifiable command line arguments in common/arguments.py.
+
+## Result Visualization
+
+![](assets/animation.gif)
+![](assets/animation_1.gif)
