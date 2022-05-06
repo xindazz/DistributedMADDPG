@@ -8,10 +8,6 @@ from tqdm import tqdm
 from common.arguments import get_args
 from common.utils import make_env, save_args_to_file
 
-# from maddpg.actor_critic import Actor, Critic
-
-# from runner_new import Runner, run
-
 from worker_local import worker_loop
 
 

@@ -1,5 +1,5 @@
 # from runner import Runner
-from runner_critic_no_split import Runner
+from runner import Runner
 from common.arguments import get_args
 from common.utils import make_env, save_args_to_file
 import numpy as np
