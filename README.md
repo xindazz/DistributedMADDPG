@@ -1,6 +1,8 @@
 # Distributed Genetic MADDPG
 
-This is a distributed implementation of Multi-agent Deep Deterministic Policy Gradient taking ideas from genetic algorithms. The original paper of MADDPG is [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/abs/1706.02275). Pytorch code referenced from (https://github.com/starry-sky6688/MADDPG).
+This is a distributed implementation of Multi-agent Deep Deterministic Policy Gradient taking ideas from genetic algorithms. Read more on implementation details and experiment results in project.pdf. 
+
+The original paper of MADDPG can be found here: [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/abs/1706.02275). Pytorch code referenced from (https://github.com/starry-sky6688/MADDPG).
 
 ## Requirements
 
